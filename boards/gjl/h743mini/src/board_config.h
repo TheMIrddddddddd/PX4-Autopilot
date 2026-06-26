@@ -58,7 +58,7 @@
 
 /* PX4IO connection configuration */
 
-#define BOARD_USES_PX4IO_VERSION       2
+//#define BOARD_USES_PX4IO_VERSION       2
 #define PX4IO_SERIAL_DEVICE            "/dev/ttyS4"
 #define PX4IO_SERIAL_TX_GPIO           GPIO_USART6_TX
 #define PX4IO_SERIAL_RX_GPIO           GPIO_USART6_RX
@@ -76,8 +76,8 @@
 
 /* LEDs are driven with push pull Anodes to 3.3V */
 
-#define GPIO_nLED_RED        /* PD10 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN10)
-#define GPIO_nLED_BLUE       /* PD11 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTD|GPIO_PIN11)
+#define GPIO_nLED_RED        /* PD10 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN0)
+#define GPIO_nLED_BLUE       /* PD11 */  (GPIO_OUTPUT|GPIO_PUSHPULL|GPIO_SPEED_50MHz|GPIO_OUTPUT_SET|GPIO_PORTB|GPIO_PIN1)
 
 #define BOARD_HAS_CONTROL_STATUS_LEDS      1
 #define BOARD_OVERLOAD_LED     LED_RED
@@ -103,7 +103,6 @@
 
 #define PX4_ADC_GPIO  \
 	/* PC4  */  GPIO_ADC12_INP4,   \
-	/* PB1  */  GPIO_ADC12_INP5,   \
 	/* PC5  */  GPIO_ADC12_INP8,   \
 	/* PC0  */  GPIO_ADC123_INP10, \
 	/* PC1  */  GPIO_ADC123_INP11, \
@@ -112,7 +111,7 @@
 
 /* Define Channel numbers must match above GPIO pin IN(n)*/
 #define ADC_BATTERY1_CURRENT_CHANNEL            /* PC4 */  ADC1_CH(4)
-#define ADC_BATTERY2_VOLTAGE_CHANNEL            /* PB1 */  ADC1_CH(5)
+//#define ADC_BATTERY2_VOLTAGE_CHANNEL            /* PB1 */  ADC1_CH(5)
 #define ADC_BATTERY1_VOLTAGE_CHANNEL            /* PC5 */  ADC1_CH(8)
 #define ADC_HW_REV_SENSE_CHANNEL                /* PC0 */  ADC3_CH(10)
 #define ADC_HW_VER_SENSE_CHANNEL                /* PC1 */  ADC3_CH(11)
@@ -121,8 +120,6 @@
 
 #define ADC_CHANNELS \
 	((1 << ADC_BATTERY1_CURRENT_CHANNEL) | \
-	 (1 << ADC_BATTERY2_VOLTAGE_CHANNEL) | \
-	 (1 << ADC_BATTERY1_VOLTAGE_CHANNEL) | \
 	 (1 << ADC_BATTERY2_CURRENT_CHANNEL) | \
 	 (1 << ADC_SCALED_V5_CHANNEL       ))
 
@@ -267,7 +264,6 @@
 		GPIO_VDD_5V_HIPOWER_nEN,          \
 		GPIO_VDD_5V_HIPOWER_nOC,          \
 		GPIO_VDD_3V3_SENSORS_EN,          \
-		GPIO_TONE_ALARM_IDLE,             \
 	}
 
 #define BOARD_ENABLE_CONSOLE_BUFFER
