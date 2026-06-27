@@ -8,6 +8,37 @@
         "C_Cpp.default.browse.limitSymbolsToIncludedHeaders": true,
         "C_Cpp.default.cppStandard": "c++14",
         "C_Cpp.default.cStandard": "c11",
+        "C_Cpp.default.compileCommands": "${workspaceFolder}/build/gjl_h743mini_default/compile_commands.json",
+        "C_Cpp.default.defines": [
+                "CONFIG_ARCH_BOARD_GJL_H743MINI",
+                "__PX4_NUTTX"
+        ],
+        "C_Cpp.default.includePath": [
+                "${workspaceFolder}/boards/gjl/h743mini/src",
+                "${workspaceFolder}/boards/gjl/h743mini/nuttx-config/include",
+                "${workspaceFolder}/build/gjl_h743mini_default",
+                "${workspaceFolder}/platforms/nuttx/src/px4/common/include",
+                "${workspaceFolder}/platforms/nuttx/src/px4/stm/stm32h7/include",
+                "${workspaceFolder}/platforms/common/include",
+                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/include",
+                "${workspaceFolder}/platforms/nuttx/NuttX/apps/include",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/include",
+                "${workspaceFolder}/src/lib"
+        ],
+        "C_Cpp.default.browse.path": [
+                "${workspaceFolder}/boards/gjl/h743mini/src",
+                "${workspaceFolder}/boards/gjl/h743mini/nuttx-config/include",
+                "${workspaceFolder}/build/gjl_h743mini_default",
+                "${workspaceFolder}/platforms/nuttx/src/px4/common/include",
+                "${workspaceFolder}/platforms/nuttx/src/px4/stm/stm32h7/include",
+                "${workspaceFolder}/platforms/common/include",
+                "${workspaceFolder}/platforms/nuttx/NuttX/nuttx/include",
+                "${workspaceFolder}/platforms/nuttx/NuttX/apps/include",
+                "${workspaceFolder}/src",
+                "${workspaceFolder}/src/include",
+                "${workspaceFolder}/src/lib"
+        ],
         "C_Cpp.formatting": "Disabled",
         "C_Cpp.intelliSenseEngine": "Default",
         "C_Cpp.vcpkg.enabled": false,

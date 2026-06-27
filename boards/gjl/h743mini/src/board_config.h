@@ -195,8 +195,12 @@
 
 /* USB OTG FS
  *
- * PA9  OTG_FS_VBUS VBUS sensing
+ * PA11 OTG_FS_DM
+ * PA12 OTG_FS_DP
+ *
+ * h743mini does not route USB VBUS to PA9. PA9 is USART1_TX on this board.
  */
+#define BOARD_USB_VBUS_SENSE_DISABLED  1
 #define GPIO_OTGFS_VBUS         /* PA9 */ (GPIO_INPUT|GPIO_PULLDOWN|GPIO_SPEED_100MHz|GPIO_PORTA|GPIO_PIN9)
 
 /* High-resolution timer */
@@ -223,12 +227,7 @@
 #  warning SDIO initialization cannot be perfomed on the IDLE thread
 #endif
 
-/* By Providing BOARD_ADC_USB_CONNECTED (using the px4_arch abstraction)
- * this board support the ADC system_power interface, and therefore
- * provides the true logic GPIO BOARD_ADC_xxxx macros.
- */
-#define BOARD_ADC_USB_CONNECTED (px4_arch_gpioread(GPIO_OTGFS_VBUS))
-#define BOARD_ADC_USB_VALID     (!px4_arch_gpioread(GPIO_nVDD_USB_VALID))
+/* No USB VBUS sense GPIO is available on h743mini. */
 
 /* FMUv6C never powers off the Servo rail */
 

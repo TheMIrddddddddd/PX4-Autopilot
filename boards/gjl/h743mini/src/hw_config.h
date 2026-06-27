@@ -65,7 +65,13 @@
 #define BOOTLOADER_DELAY               5000
 #define INTERFACE_USB                  1
 #define INTERFACE_USB_CONFIG           "/dev/ttyACM0"
-#define BOARD_VBUS                     MK_GPIO_INPUT(GPIO_OTGFS_VBUS)
+
+/*
+ * h743mini does not route USB VBUS to PA9. PA9 is USART1_TX on this board.
+ * Leave BOARD_VBUS undefined so the bootloader does not sample PA9.
+ */
+#define BOARD_USB_VBUS_SENSE_DISABLED  1
+/* #define BOARD_VBUS                  MK_GPIO_INPUT(GPIO_OTGFS_VBUS) */
 
 //#define USE_VBUS_PULL_DOWN
 #define INTERFACE_USART                1
@@ -76,7 +82,7 @@
 #define BOARD_FLASH_SECTORS            (15)
 #define BOARD_FLASH_SIZE               (_FLASH_KBYTES * 1024)
 
-#define OSC_FREQ                       16
+#define OSC_FREQ                       25
 
 #define BOARD_PIN_LED_ACTIVITY         GPIO_nLED_BLUE // BLUE
 #define BOARD_PIN_LED_BOOTLOADER       GPIO_nLED_RED // RED
