@@ -441,24 +441,15 @@
 #define GPIO_I2C4_SCL_GPIO                  (GPIO_OUTPUT | GPIO_OPENDRAIN | GPIO_SPEED_50MHz | GPIO_OUTPUT_SET | GPIO_PORTD | GPIO_PIN12)
 #define GPIO_I2C4_SDA_GPIO                  (GPIO_OUTPUT | GPIO_OPENDRAIN | GPIO_SPEED_50MHz | GPIO_OUTPUT_SET | GPIO_PORTD | GPIO_PIN13)
 
-/* SDMMC2
+/* SDMMC1
  *
- *      VDD 3.3
- *      GND
- *      SDMMC2_CK                           PD6
- *      SDMMC2_CMD                          PD7
- *      SDMMC2_D0                           PB14
- *      SDMMC2_D1                           PB15
- *      SDMMC2_D2                           PB3
- *      SDMMC2_D3                           PB4
+ * SDIO_D0   PC8
+ * SDIO_D1   PC9
+ * SDIO_D2   PC10
+ * SDIO_D3   PC11
+ * SDIO_CLK  PC12
+ * SDIO_CMD  PD2
  */
-
-#define GPIO_SDMMC2_CK   GPIO_SDMMC2_CK_1  /* PD6  */
-#define GPIO_SDMMC2_CMD  GPIO_SDMMC2_CMD_1 /* PD7  */
-//      GPIO_SDMMC2_D0   No Remap          /* PB14 */
-//      GPIO_SDMMC2_D1   No Remap          /* PB15 */
-#define GPIO_SDMMC2_D2   GPIO_SDMMC2_D2_2  /* PB3  */
-//      GPIO_SDMMC2_D3    No Remap         /* PB4  */
 
 /* USB
  *
