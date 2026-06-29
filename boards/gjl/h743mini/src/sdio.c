@@ -43,6 +43,7 @@
 #include <stdio.h>
 #include <debug.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <nuttx/sdio.h>
 #include <nuttx/mmcsd.h>
@@ -65,6 +66,8 @@
 #if !defined(GPIO_SDMMC1_NCD)
 #  undef HAVE_NCD
 #endif
+
+#define MMCSD_INITIAL_DELAY_US    1000000
 
 /****************************************************************************
  * Private Data
@@ -168,6 +171,7 @@ int stm32_sdio_initialize(void)
 #else
 	/* Assume that the SD card is inserted.  What choice do we have? */
 
+	usleep(MMCSD_INITIAL_DELAY_US);
 	sdio_mediachange(sdio_dev, true);
 #endif
 
