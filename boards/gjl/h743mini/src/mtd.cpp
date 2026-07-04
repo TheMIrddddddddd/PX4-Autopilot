@@ -34,9 +34,9 @@
 #include <nuttx/spi/spi.h>
 #include <px4_platform_common/px4_manifest.h>
 //                                                              KiB BS    nB
-static const px4_mft_device_t spi2 = {             // FM25V02A on FMUM 32K 512 X 64
-	.bus_type = px4_mft_device_t::SPI,
-	.devid    = SPIDEV_FLASH(0)
+static const px4_mft_device_t qspi_flash = {
+	.bus_type = px4_mft_device_t::QSPI,
+	.devid    = 0
 };
 
 static const px4_mft_device_t i2c2 = {
@@ -44,6 +44,22 @@ static const px4_mft_device_t i2c2 = {
 	.devid    = PX4_MK_I2C_DEVID(2, 0x50)
 };
 
+static const px4_mtd_entry_t gd25q128 = {
+	.device = &qspi_flash,
+	.npart = 2,
+	.partd = {
+		{
+			.type = MTD_PARAMETERS,
+			.path = "/fs/mtd_params",
+			.nblocks = 512 // 128 KiB = 512 * 256
+		},
+		{
+			.type = MTD_WAYPOINTS,
+			.path = "/fs/mtd_waypoints",
+			.nblocks = 512 // 128 KiB = 512 * 256
+		}
+	},
+};
 
 static const px4_mtd_entry_t eeprom = {
 	.device = &i2c2,
@@ -63,9 +79,10 @@ static const px4_mtd_entry_t eeprom = {
 };
 
 static const px4_mtd_manifest_t board_mtd_config = {
-	.nconfigs = 1,
+	.nconfigs = 2,
 	.entries = {
-		&eeprom
+		&eeprom,
+		&gd25q128
 	}
 };
 

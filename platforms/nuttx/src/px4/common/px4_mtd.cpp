@@ -56,10 +56,18 @@
 
 #include <nuttx/drivers/drivers.h>
 #include <nuttx/spi/spi.h>
+#include <nuttx/spi/qspi.h>
 #include <nuttx/mtd/mtd.h>
+
+#if defined(CONFIG_STM32H7_QUADSPI) && defined(CONFIG_MTD_W25QXXXJV)
+# include "stm32_qspi.h"
+#endif
 
 extern "C" {
 	struct mtd_dev_s *ramtron_initialize(FAR struct spi_dev_s *dev);
+#if defined(CONFIG_STM32H7_QUADSPI) && defined(CONFIG_MTD_W25QXXXJV)
+	struct mtd_dev_s *w25qxxxjv_initialize(FAR struct qspi_dev_s *qspi, bool unprotect);
+#endif
 	struct mtd_dev_s *mtd_partition(FAR struct mtd_dev_s *mtd,
 					off_t firstblock, off_t nblocks);
 }
@@ -130,6 +138,29 @@ static int ramtron_attach(mtd_instance_s &instance)
 #endif
 }
 
+static int qspi_flash_attach(mtd_instance_s &instance)
+{
+#if !defined(CONFIG_STM32H7_QUADSPI) || !defined(CONFIG_MTD_W25QXXXJV)
+	PX4_ERR("Misconfiguration QSPI flash not enabled");
+	return -ENXIO;
+#else
+	struct qspi_dev_s *qspi = stm32h7_qspi_initialize(0);
+
+	if (qspi == nullptr) {
+		PX4_ERR("failed to initialize QSPI bus");
+		return -ENXIO;
+	}
+
+	instance.mtd_dev = w25qxxxjv_initialize(qspi, true);
+
+	if (instance.mtd_dev == nullptr) {
+		PX4_ERR("failed to initialize QSPI flash");
+		return -EIO;
+	}
+
+	return 0;
+#endif
+}
 
 static int at24xxx_attach(mtd_instance_s &instance)
 {
@@ -345,7 +376,8 @@ memoryout:
 
 		} else if (mtd_list->entries[i]->device->bus_type == px4_mft_device_t::SPI) {
 			rv = ramtron_attach(instances[i]);
-
+		} else if (mtd_list->entries[i]->device->bus_type == px4_mft_device_t::QSPI) {
+			rv = qspi_flash_attach(instances[i]);
 		} else if (mtd_list->entries[i]->device->bus_type == px4_mft_device_t::ONCHIP) {
 			instances[i].n_partitions_current++;
 			return 0;

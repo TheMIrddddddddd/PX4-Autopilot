@@ -132,6 +132,31 @@
 #  define AT24XX_PAGESIZE   64
 #endif
 
+#ifndef AT24XX_ADDRSIZE
+#  define AT24XX_ADDRSIZE 2
+#endif /* !AT24XX_ADDRSIZE */
+
+static uint8_t at24c_i2c_address(uint8_t base, uint16_t offset)
+{
+#if AT24XX_ADDRSIZE == 1
+  return base + ((offset >> 8) & 0x07);
+#else
+  return base;
+#endif
+}
+
+static uint8_t at24c_pack_address(uint16_t offset, uint8_t *addr)
+{
+#if AT24XX_ADDRSIZE == 1
+  addr[0] = offset & 0xff;
+  return 1;
+#else
+  addr[0] = (offset >> 8) & 0xff;
+  addr[1] = offset & 0xff;
+  return 2;
+#endif
+}
+
 /* For applications where a file system is used on the AT24, the tiny page sizes
  * will result in very inefficient FLASH usage.  In such cases, it is better if
  * blocks are comprised of "clusters" of pages so that the file system block
@@ -329,9 +354,19 @@ static ssize_t at24c_bread(FAR struct mtd_dev_s *dev, off_t startblock,
 		uint16_t offset = startblock * priv->pagesize;
 		unsigned tries = CONFIG_AT24XX_WRITE_TIMEOUT_MS;
 
-		addr[1] = offset & 0xff;
-		addr[0] = (offset >> 8) & 0xff;
+		uint8_t i2c_addr = at24c_i2c_address(priv->addr, offset);
+		msgv[0].addr = i2c_addr;
+		msgv[1].addr = i2c_addr;
+		msgv[0].length = at24c_pack_address(offset, addr);
 		msgv[1].buffer = buffer;
+
+		/* Previous 24LC64-style EEPROM path used a fixed I2C device
+		 * address plus two internal address bytes:
+		 *   addr[1] = offset & 0xff;
+		 *   addr[0] = (offset >> 8) & 0xff;
+		 * BL24C16F/AT24C16 uses a banked I2C address plus one word
+		 * address byte.
+		 */
 
 		for (;;) {
 
@@ -418,9 +453,19 @@ static ssize_t at24c_bwrite(FAR struct mtd_dev_s *dev, off_t startblock, size_t 
 		uint16_t offset = startblock * priv->pagesize;
 		unsigned tries = CONFIG_AT24XX_WRITE_TIMEOUT_MS;
 
-		buf[1] = offset & 0xff;
-		buf[0] = (offset >> 8) & 0xff;
-		memcpy(&buf[2], buffer, priv->pagesize);
+		const uint8_t i2c_addr = at24c_i2c_address(priv->addr, offset);
+		const uint8_t addr_len = at24c_pack_address(offset, buf);
+
+		msgv[0].addr = i2c_addr;
+		msgv[0].length = addr_len + priv->pagesize;
+		memcpy(&buf[addr_len], buffer, priv->pagesize);
+
+		/* Previous 24LC64-style EEPROM path used two internal address
+		 * bytes followed by page data:
+		 *   buf[1] = offset & 0xff;
+		 *   buf[0] = (offset >> 8) & 0xff;
+		 *   memcpy(&buf[2], buffer, priv->pagesize);
+		 */
 
 		for (;;) {
 
@@ -592,6 +637,13 @@ FAR struct mtd_dev_s *px4_at24c_initialize(FAR struct i2c_master_s *dev,
 			.length = sizeof(buf),
 		}
 	};
+
+	const uint16_t offset = 0;
+	const uint8_t i2c_addr = at24c_i2c_address(priv->addr, offset);
+
+	msgv[0].addr = i2c_addr;
+	msgv[1].addr = i2c_addr;
+	msgv[0].length = at24c_pack_address(offset, addrbuf);
 
 	BOARD_EEPROM_WP_CTRL(true);
 
