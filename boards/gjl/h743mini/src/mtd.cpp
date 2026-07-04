@@ -39,54 +39,71 @@ static const px4_mft_device_t spi2 = {             // FM25V02A on FMUM 32K 512 X
 	.devid    = SPIDEV_FLASH(0)
 };
 
-static const px4_mft_device_t i2c4 = {             // 24LC64T on IMU   8K 32 X 256
-	.bus_type =  px4_mft_device_t::I2C,
-	.devid    =  PX4_MK_I2C_DEVID(4, 0x50)
+static const px4_mft_device_t i2c2 = {
+	.bus_type = px4_mft_device_t::I2C,
+	.devid    = PX4_MK_I2C_DEVID(2, 0x50)
 };
 
 
-static const px4_mtd_entry_t fmum_fram = {
-	.device = &spi2,
-	.npart = 2,
-	.partd = {
-		{
-			.type = MTD_PARAMETERS,
-			.path = "/fs/mtd_params",
-			.nblocks = 32
-		},
-		{
-			.type = MTD_WAYPOINTS,
-			.path = "/fs/mtd_waypoints",
-			.nblocks = 32
-
-		}
-	},
-};
-
-static const px4_mtd_entry_t imu_eeprom = {
-	.device = &i2c4,
+static const px4_mtd_entry_t eeprom = {
+	.device = &i2c2,
 	.npart = 2,
 	.partd = {
 		{
 			.type = MTD_CALDATA,
 			.path = "/fs/mtd_caldata",
-			.nblocks = 248
+			.nblocks = 112 // 1792 = 112 * 16
 		},
 		{
 			.type = MTD_ID,
 			.path = "/fs/mtd_id",
-			.nblocks = 8 // 256 = 32 * 8
+			.nblocks = 16 // 256 = 16 * 16
 		}
 	},
 };
 
 static const px4_mtd_manifest_t board_mtd_config = {
-	.nconfigs   = 2,
+	.nconfigs = 1,
 	.entries = {
-		&fmum_fram,
-		&imu_eeprom
+		&eeprom
 	}
 };
+
+// static const px4_mtd_entry_t fmum_fram = {
+// 	.device = &spi2,
+// 	.npart = 2,
+// 	.partd = {
+// 		{
+// 			.type = MTD_PARAMETERS,
+// 			.path = "/fs/mtd_params",
+// 			.nblocks = 32
+// 		},
+// 		{
+// 			.type = MTD_WAYPOINTS,
+// 			.path = "/fs/mtd_waypoints",
+// 			.nblocks = 32
+
+// 		}
+// 	},
+// };
+
+// static const px4_mtd_entry_t imu_eeprom = {
+// 	.device = &i2c4,
+// 	.npart = 2,
+// 	.partd = {
+// 		{
+// 			.type = MTD_CALDATA,
+// 			.path = "/fs/mtd_caldata",
+// 			.nblocks = 248
+// 		},
+// 		{
+// 			.type = MTD_ID,
+// 			.path = "/fs/mtd_id",
+// 			.nblocks = 8 // 256 = 32 * 8
+// 		}
+// 	},
+// };
+
 
 static const px4_mft_entry_s mtd_mft = {
 	.type = MTD,
