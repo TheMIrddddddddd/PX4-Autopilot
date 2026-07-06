@@ -162,7 +162,16 @@
 #define DIRECT_PWM_OUTPUT_CHANNELS   8
 
 
-/* Power supply control and monitoring GPIOs */
+/* Power supply control and monitoring GPIOs
+ *
+ * H743mini does not carry over the full FMUv6C power-switch circuit. Keep
+ * legacy definitions documented here, but do not initialize or drive pins that
+ * are already assigned to real H743mini peripherals:
+ *
+ * - PA15: legacy Brick1 valid input, reserved for TIM2_CH1 / M1 PWM.
+ * - PC10/PC11: legacy high-power 5V enable/OC, used by SDMMC1 D2/D3.
+ * - PB2: legacy sensors 3V3 enable, used by GD25Q128 QSPI_CLK.
+ */
 
 #define GPIO_nPOWER_IN_A                /* PA15  */ (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTA|GPIO_PIN15)
 #define GPIO_nPOWER_IN_B                /* PB12  */ (GPIO_INPUT|GPIO_PULLUP|GPIO_PORTB|GPIO_PIN12)
@@ -182,8 +191,8 @@
 /* Define True logic Power Control in arch agnostic form */
 
 #define VDD_5V_PERIPH_EN(on_true)          px4_arch_gpiowrite(GPIO_VDD_5V_PERIPH_nEN, !(on_true))
-#define VDD_5V_HIPOWER_EN(on_true)         px4_arch_gpiowrite(GPIO_VDD_5V_HIPOWER_nEN, !(on_true))
-#define VDD_3V3_SENSORS_EN(on_true)       px4_arch_gpiowrite(GPIO_VDD_3V3_SENSORS4_EN, (on_true))
+#define VDD_5V_HIPOWER_EN(on_true)         do { (void)(on_true); } while (0)
+#define VDD_3V3_SENSORS_EN(on_true)        do { (void)(on_true); } while (0)
 
 /* Tone alarm output */
 
@@ -235,11 +244,11 @@
 
 #define BOARD_ADC_SERVO_VALID     (1)
 
-#define BOARD_ADC_BRICK1_VALID  (!px4_arch_gpioread(GPIO_nVDD_BRICK1_VALID))
+#define BOARD_ADC_BRICK1_VALID  (1)
 #define BOARD_ADC_BRICK2_VALID  (!px4_arch_gpioread(GPIO_nVDD_BRICK2_VALID))
 
 #define BOARD_ADC_PERIPH_5V_OC  (!px4_arch_gpioread(GPIO_VDD_5V_PERIPH_nOC))
-#define BOARD_ADC_HIPOWER_5V_OC (!px4_arch_gpioread(GPIO_VDD_5V_HIPOWER_nOC))
+#define BOARD_ADC_HIPOWER_5V_OC (0)
 
 
 /* This board provides a DMA pool and APIs */
@@ -249,6 +258,11 @@
 
 #define BOARD_HAS_ON_RESET 1
 
+/* Do not initialize these FMUv6C legacy power pins on H743mini:
+ * - GPIO_nPOWER_IN_A: PA15 is reserved for TIM2_CH1 / M1 PWM.
+ * - GPIO_VDD_5V_HIPOWER_nEN/nOC: PC10/PC11 are SDMMC1 D2/D3.
+ * - GPIO_VDD_3V3_SENSORS_EN: PB2 is GD25Q128 QSPI_CLK.
+ */
 #define PX4_GPIO_INIT_LIST { \
 		PX4_ADC_GPIO,                     \
 		GPIO_HW_VER_REV_DRIVE,            \
@@ -257,14 +271,10 @@
 		GPIO_CAN2_TX,                     \
 		GPIO_CAN2_RX,                     \
 		GPIO_HEATER_OUTPUT,               \
-		GPIO_nPOWER_IN_A,                 \
 		GPIO_nPOWER_IN_B,                 \
 		GPIO_nPOWER_IN_C,                 \
 		GPIO_VDD_5V_PERIPH_nEN,           \
 		GPIO_VDD_5V_PERIPH_nOC,           \
-		GPIO_VDD_5V_HIPOWER_nEN,          \
-		GPIO_VDD_5V_HIPOWER_nOC,          \
-		GPIO_VDD_3V3_SENSORS_EN,          \
 	}
 
 #define BOARD_ENABLE_CONSOLE_BUFFER
