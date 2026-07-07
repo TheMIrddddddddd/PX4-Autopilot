@@ -56,7 +56,12 @@
 
 #undef TRACE_PINS
 
-/* PX4IO connection configuration */
+/* Legacy PX4IO serial configuration.
+ *
+ * CONFIG_DRIVERS_PX4IO is disabled on H743mini. Keep these definitions for the
+ * inherited board code, but USART6 PC6/PC7 is reserved for later RCIN/CRSF
+ * planning rather than an active PX4IO link.
+ */
 
 //#define BOARD_USES_PX4IO_VERSION       2
 #define PX4IO_SERIAL_DEVICE            "/dev/ttyS4"
