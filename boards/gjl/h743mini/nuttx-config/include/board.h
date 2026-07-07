@@ -367,7 +367,7 @@
 #define GPIO_USART1_TX   GPIO_USART1_TX_1    /* PA9 */
 
 #define GPIO_USART2_RX   GPIO_USART2_RX_1   /* PA3   */
-#define GPIO_USART2_TX   GPIO_USART2_TX_2   /* PD5   */
+#define GPIO_USART2_TX   GPIO_USART2_TX_1   /* PA2   */
 
 #define GPIO_USART3_RX   GPIO_USART3_RX_3   /* PD9   */
 #define GPIO_USART3_TX   GPIO_USART3_TX_3   /* PD8   */
@@ -391,8 +391,8 @@
 
 /* CAN
  *
- * CAN1 is routed to transceiver.
- * CAN2 is routed to transceiver.
+ * CAN1/CAN2 transceiver routing is not confirmed on H743mini. Keep the pin
+ * definitions for later bringup, but do not initialize them in PX4_GPIO_INIT_LIST.
  */
 #define GPIO_CAN1_RX     GPIO_CAN1_RX_3     /* PD0  */
 #define GPIO_CAN1_TX     GPIO_CAN1_TX_3     /* PD1  */
@@ -401,7 +401,8 @@
 
 /* SPI
  * SPI1 is sensors
- * SPI2 is FRAM
+ * SPI2 pin definitions are kept for legacy compatibility; no FRAM is used by
+ * the current H743mini storage path.
  *
  */
 

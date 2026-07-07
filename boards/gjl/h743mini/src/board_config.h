@@ -108,7 +108,6 @@
 	/* PC5  */  GPIO_ADC12_INP8,   \
 	/* PC0  */  GPIO_ADC123_INP10, \
 	/* PC1  */  GPIO_ADC123_INP11, \
-	/* PA2  */  GPIO_ADC12_INP14,  \
 	/* PA4  */  GPIO_ADC12_INP18   \
 
 /* Define Channel numbers must match above GPIO pin IN(n)*/
@@ -117,12 +116,12 @@
 #define ADC_BATTERY1_VOLTAGE_CHANNEL            /* PC5 */  ADC1_CH(8)
 #define ADC_HW_REV_SENSE_CHANNEL                /* PC0 */  ADC3_CH(10)
 #define ADC_HW_VER_SENSE_CHANNEL                /* PC1 */  ADC3_CH(11)
-#define ADC_BATTERY2_CURRENT_CHANNEL            /* PA2 */  ADC1_CH(14)
+/* PA2 is reserved for USART2_TX / GPS. Do not initialize it as ADC. */
+//#define ADC_BATTERY2_CURRENT_CHANNEL            /* PA2 */  ADC1_CH(14)
 #define ADC_SCALED_V5_CHANNEL                   /* PA4 */  ADC1_CH(18)
 
 #define ADC_CHANNELS \
 	((1 << ADC_BATTERY1_CURRENT_CHANNEL) | \
-	 (1 << ADC_BATTERY2_CURRENT_CHANNEL) | \
 	 (1 << ADC_SCALED_V5_CHANNEL       ))
 
 #define HW_REV_VER_ADC_BASE STM32_ADC3_BASE
@@ -258,18 +257,21 @@
 
 #define BOARD_HAS_ON_RESET 1
 
-/* Do not initialize these FMUv6C legacy power pins on H743mini:
+/* Do not initialize these FMUv6C legacy / unavailable pins on H743mini:
  * - GPIO_nPOWER_IN_A: PA15 is reserved for TIM2_CH1 / M1 PWM.
  * - GPIO_VDD_5V_HIPOWER_nEN/nOC: PC10/PC11 are SDMMC1 D2/D3.
  * - GPIO_VDD_3V3_SENSORS_EN: PB2 is GD25Q128 QSPI_CLK.
+ * - GPIO_CAN1_TX/RX and GPIO_CAN2_TX/RX: CAN transceiver routing is not confirmed.
+ *
+ * Screened CAN entries from PX4_GPIO_INIT_LIST:
+ * - GPIO_CAN1_TX
+ * - GPIO_CAN1_RX
+ * - GPIO_CAN2_TX
+ * - GPIO_CAN2_RX
  */
 #define PX4_GPIO_INIT_LIST { \
 		PX4_ADC_GPIO,                     \
 		GPIO_HW_VER_REV_DRIVE,            \
-		GPIO_CAN1_TX,                     \
-		GPIO_CAN1_RX,                     \
-		GPIO_CAN2_TX,                     \
-		GPIO_CAN2_RX,                     \
 		GPIO_HEATER_OUTPUT,               \
 		GPIO_nPOWER_IN_B,                 \
 		GPIO_nPOWER_IN_C,                 \
