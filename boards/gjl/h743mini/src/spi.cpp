@@ -42,9 +42,11 @@ constexpr px4_spi_bus_all_hw_t px4_spi_buses_all_hw[BOARD_NUM_SPI_CFG_HW_VERSION
 			initSPIDevice(DRV_ACC_DEVTYPE_BMI055,  SPI::CS{GPIO::PortC, GPIO::Pin15}, SPI::DRDY{GPIO::PortE, GPIO::Pin4}),
 			initSPIDevice(DRV_IMU_DEVTYPE_ICM42688P, SPI::CS{GPIO::PortC, GPIO::Pin13}, SPI::DRDY{GPIO::PortE, GPIO::Pin6}),
 		}, {GPIO::PortB, GPIO::Pin2}),
-		initSPIBus(SPI::Bus::SPI2, {
-			initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
-		}),
+		// H743mini does not use the inherited V6C SPI2 flash/FRAM path.
+		// Storage is provided by I2C2 EEPROM + QSPI GD25Q128.
+		// initSPIBus(SPI::Bus::SPI2, {
+		// 	initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
+		// }),
 	}),
 	initSPIHWVersion(V6C01, {
 		initSPIBus(SPI::Bus::SPI1, {
@@ -52,9 +54,11 @@ constexpr px4_spi_bus_all_hw_t px4_spi_buses_all_hw[BOARD_NUM_SPI_CFG_HW_VERSION
 			initSPIDevice(DRV_ACC_DEVTYPE_BMI055,  SPI::CS{GPIO::PortC, GPIO::Pin15}, SPI::DRDY{GPIO::PortE, GPIO::Pin4}),
 			initSPIDevice(DRV_IMU_DEVTYPE_ICM42688P, SPI::CS{GPIO::PortC, GPIO::Pin13}, SPI::DRDY{GPIO::PortE, GPIO::Pin6}),
 		}, {GPIO::PortB, GPIO::Pin2}),
-		initSPIBus(SPI::Bus::SPI2, {
-			initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
-		}),
+		// H743mini does not use the inherited V6C SPI2 flash/FRAM path.
+		// Storage is provided by I2C2 EEPROM + QSPI GD25Q128.
+		// initSPIBus(SPI::Bus::SPI2, {
+		// 	initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
+		// }),
 	}),
 	initSPIHWVersion(V6C21, {
 		initSPIBus(SPI::Bus::SPI1, {
@@ -62,9 +66,11 @@ constexpr px4_spi_bus_all_hw_t px4_spi_buses_all_hw[BOARD_NUM_SPI_CFG_HW_VERSION
 			initSPIDevice(DRV_ACC_DEVTYPE_BMI055,  SPI::CS{GPIO::PortC, GPIO::Pin15}, SPI::DRDY{GPIO::PortE, GPIO::Pin4}),
 			initSPIDevice(DRV_IMU_DEVTYPE_ICM42688P, SPI::CS{GPIO::PortC, GPIO::Pin13}, SPI::DRDY{GPIO::PortE, GPIO::Pin6}),
 		}, {GPIO::PortB, GPIO::Pin2}),
-		initSPIBus(SPI::Bus::SPI2, {
-			initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
-		}),
+		// H743mini does not use the inherited V6C SPI2 flash/FRAM path.
+		// Storage is provided by I2C2 EEPROM + QSPI GD25Q128.
+		// initSPIBus(SPI::Bus::SPI2, {
+		// 	initSPIDevice(SPIDEV_FLASH(0), SPI::CS{GPIO::PortD, GPIO::Pin4})
+		// }),
 	}),
 };
 
