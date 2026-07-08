@@ -176,6 +176,9 @@ enum GYRO_CONFIG0_BIT : uint8_t {
 	//  0011: 8kHz
 	GYRO_ODR_8KHZ_SET    = Bit1 | Bit0,
 	GYRO_ODR_8KHZ_CLEAR  = Bit3 | Bit2,
+	//  0100: 4kHz
+	GYRO_ODR_4KHZ_SET    = Bit2,
+	GYRO_ODR_4KHZ_CLEAR  = Bit3 | Bit1 | Bit0,
 	//  0110: 1kHz (default)
 	GYRO_ODR_1KHZ_SET    = Bit2 | Bit1,
 	GYRO_ODR_1KHZ_CLEAR  = Bit3 | Bit0,
@@ -200,6 +203,9 @@ enum ACCEL_CONFIG0_BIT : uint8_t {
 	//  0011: 8kHz
 	ACCEL_ODR_8KHZ_SET    = Bit1 | Bit0,
 	ACCEL_ODR_8KHZ_CLEAR  = Bit3 | Bit2,
+	//  0100: 4kHz
+	ACCEL_ODR_4KHZ_SET    = Bit2,
+	ACCEL_ODR_4KHZ_CLEAR  = Bit3 | Bit1 | Bit0,
 	//  0110: 1kHz (default)
 	ACCEL_ODR_1KHZ_SET    = Bit2 | Bit1,
 	ACCEL_ODR_1KHZ_CLEAR  = Bit3 | Bit0,

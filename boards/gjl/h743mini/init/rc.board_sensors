@@ -21,7 +21,7 @@
 # bmi055 -G -R 4 -s start
 
 # Internal SPI bus ICM42688p
-# icm42688p -R 6 -s start
+icm42688p -R 0 -s -f 2000 start
 
 # Internal barometer on I2C4 (The same bus is also exposed externally, and therefore marked as external)
 # ms5611 -X -b 4 -a 0x77 start
