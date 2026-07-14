@@ -21,7 +21,7 @@
 7. 如果遇到问题，看“调试方法”和“常见坑”。
 
 ## 1. 当前状态
-当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。4G MAVLink 远程数传已完成第一版引脚规划：保留 JY901B 的 `UART4 PH13/PH14`，新增 UART5 备用复用 `PB13/PB12` 分配给 4G DTU，当前仍处于文档规划阶段，尚未改源码和上板验证。由于现阶段仍是杜邦线连接，SPI 高频余量需要等 PCB 画完、走线和供电条件稳定后再重新测试。当前主线进入“保持 ICM 稳定参数、继续验证 EKF2，并接入 GPS/IST8310/JY901B 等真实外设”的阶段。
+当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）：后续优先用于普通数传电台、USB-TTL MAVLink 调试或其他 MAVLink 串口设备；接线为数传 RXD→`PB13/UART5_TX`、TXD→`PB12/UART5_RX`、GND 共地、VIN 按模块手册独立供电。4G DTU 公网链路仅作为阶段性测试经验保留记录，用户已判断体验不理想，**当前不再作为默认推进方向**。由于现阶段仍是杜邦线连接，SPI 高频余量需要等 PCB 画完、走线和供电条件稳定后再重新测试。当前主线进入“先恢复/巩固 IMU 与姿态数据源，再用 TEL2 普通数传验证 MAVLink 体验，并继续接入 GPS/IST8310/JY901B 等外设”的阶段。
 
 当前优先烧录方式：
 
@@ -94,10 +94,11 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - `ICM42688P`：主 IMU，走 `SPI2 PC2/PC3/PD3`，规划 `PE4` 为 CS，`PE6` 为 INT/DRDY；其中 `PD3` 在排针上对应 `P2-36`。
   - `GPS + IST8310`：GPS 走 `USART2 PA2/PA3`，IST8310 主磁力计走 `I2C1 PB7/PB8`。
   - `JY901B`：作为副 IMU / 气压计 / 姿态参考，规划走 `UART4 PH13/PH14`，不用 I2C。
-- 已完成 4G MAVLink 远程数传第一版引脚规划：
+- 已收口 `UART5 PB13/PB12` 为 **TEL2 / MAVLink 数传预留口**（不是 4G 专用口）：
   - `JY901B` 继续独占 `UART4 PH13/PH14`，不改变既有传感器规划。
-  - 4G DTU 使用 `UART5_TX=PB13/P1-33`、`UART5_RX=PB12/P1-32`，避开 TF 卡 `PC12/PD2`。
-  - `PB12` 当前仅残留 FMUv6C `Brick2 valid` 定义，`PB13` 当前仅残留已关闭的 `CAN2_TX` 定义；后续实现 UART5 时再按真实硬件释放。
+  - TEL2 使用 `UART5_TX=PB13/P1-33`、`UART5_RX=PB12/P1-32`，避开 TF 卡 `PC12/PD2`，与 GPS、CRSF、电池 ADC、JY901B 等规划不冲突。
+  - 后续优先接普通数传电台 / USB-TTL MAVLink / 其他 MAVLink 串口设备；4G DTU 仅作历史公网链路测试记录，不作为当前默认方向。
+  - 数传接线：模块 `RXD→PB13`，`TXD→PB12`，`GND→GND`，`VIN` 按手册独立供电（不从 GPIO 供电）。
 - 已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：
   - 板级设备表改为 `SPI2 + PE4 CS + PE6 DRDY`。
   - 启动命令为 `icm42688p -R 0 -s -f 2000 start`。
@@ -127,7 +128,7 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - `GPS_1_CONFIG=0` 已用于解除 GPS1 对 `/dev/ttyS0` 的默认占用；后续仍需为真实 GPS 接口重新规划板级串口角色。
 - `No autostart ID found` 场景下仍会直接尝试启动 `ekf2`；当前已有 ICM42688P IMU，但 Baro、Compass、GPS 等外设尚未完整接入，EKF2 状态仍需继续验证。
 - PX4IO、UAVCAN、部分串口和传感器启动项还需要按当前最小系统板裁剪。
-- 4G UART5/TEL2 当前只有引脚与链路规划，尚未修改 `board.h`、NuttX UART5/DMA、串口角色和 MAVLink 参数，也未完成 USB-TTL/DTU/公网链路验证。
+- `UART5 PB13/PB12` 文档定位已收口为 TEL2 / MAVLink 数传预留口；4G 公网链路曾做过阶段性测试，但体验不理想，当前不继续作为主调试链路推进。优先恢复 IMU/姿态数据后，再用普通数传验证 QGC。
 
 ### 1.1 当前阶段启动约束
 
@@ -141,24 +142,20 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - 当前主线不是继续纠缠 TF 卡软复位问题，而是在“冷启动可用”的前提下，保持 ICM42688P 稳定参数、继续验证 EKF2，并接入 GPS/IST8310/JY901B 等真实外设。
 
 ### 1.2 下一阶段任务和目标
-下一阶段目标：在 EEPROM 与 GD25Q128 存储链路均已验证、`ICM42688P` 主 IMU 已在杜邦线条件下通过 SPI2 DMA 稳定读取的基础上，先保持当前稳定 IMU 参数并验证 EKF2，再按“主磁力计/GPS -> JY901B 副传感器 -> PWM/RCIN”的顺序逐个适配真实外设，形成一个“存储可靠、启动日志更干净、USB/QGC/NSH 保留、传感器与执行器逐步接入”的基础固件。
+下一阶段目标：先恢复飞控本体传感器数据（accel/gyro/attitude），再用 **TEL2 普通数传**（`UART5 PB13/PB12`）验证 MAVLink 体验；暂不继续推进 4G 公网链路。传感器与执行器仍按“主磁力计/GPS -> JY901B 副传感器 -> PWM/RCIN”逐步接入。
 
 优先任务：
 
-1. 完整复测当前存储链路：`mtd status`、`mtd -i 1 readtest`、`mtd -i 1 rwtest`、`param save`、断电重启后 `dmesg`。
-2. 临时关闭当前未接入的 V6C 默认传感器启动项，让 `dmesg` 更接近当前真实硬件。
-3. 保持 `ICM42688P` 当前稳定工作点：`2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`，不要在杜邦线接法下继续追高 SPI 频率。
-4. 等 PCB 画完、IMU 走短 PCB 线并完成供电去耦后，再从 `2 MHz` 稳定点开始重新测试 `4/8/12/16/24 MHz` SPI 高频余量。
-5. 继续验证 `ICM42688P` 进入 EKF2 后的姿态链路，并按实际安装方向复核 `-R 0`。
-6. 再适配 `GPS + IST8310`：把 `USART2_TX` 从 `PD5` 调整到 `PA2`，用 `I2C1 PB7/PB8` 启动 `ist8310` 主磁力计。
-7. 再接入 `JY901B`：启用 `UART4 PH13/PH14`，先做串口帧读取和日志对比，再考虑发布副 IMU、baro、mag。
-8. 视需要处理 `No autostart ID found` 场景下的 `ekf2 start failed (-1)`。
-9. 按当前引脚规划推进四路电机 PWM：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`。
-10. 按当前引脚规划推进 RCIN / CRSF：`USART6 PC6/PC7`。
-11. 临时关闭或延后 PX4IO、UAVCAN、无用 MAVLink 串口等启动项。
-12. 后续若需要更高 QSPI 吞吐，再评估 DMA；当前不是优先项。
-13. 编译、烧录、完全断电冷启动后重新检查 `dmesg`，目标是只保留当前阶段必须面对的问题。
-14. 进入 4G 阶段时，在不改变现有功能引脚的前提下启用 `UART5 PB13/PB12`，同步核对 UART4/UART5/USART6 的最终 `/dev/ttySx` 映射，再逐级验证 USB-TTL、MAVLink、DTU 和公网 relay。
+1. 检查 `icm42688p status`、`listener sensor_accel 1`、`listener sensor_gyro 1`、`listener vehicle_attitude 1`、`ekf2 status`。
+2. 保持 `ICM42688P` 当前稳定工作点：`2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`，不要在杜邦线接法下继续追高 SPI 频率。
+3. 确认本体能产生姿态数据后，在 `UART5 PB13/PB12`（TEL2）上接普通数传电台或 USB-TTL，验证 QGC 收 HEARTBEAT / SYS_STATUS / ATTITUDE 等。
+4. 数传稳定后，再评估是否提高 `MAV_1_RATE` 或 `SER_TEL2_BAUD`（当前默认约 115200 / MAVLink Normal / 流控关）。
+5. 再适配 `GPS + IST8310`：`USART2 PA2/PA3`，`I2C1 PB7/PB8` 启动 `ist8310` 主磁力计。
+6. 再接入 `JY901B`：`UART4 PH13/PH14`，先做串口帧读取和日志对比。
+7. 按当前引脚规划推进四路电机 PWM：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`。
+8. 按当前引脚规划推进 RCIN / CRSF：`USART6 PC6/PC7`。
+9. 临时关闭或延后 PX4IO、UAVCAN、无用启动项；需要时再完整复测 MTD/冷启动存储链路。
+10. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC UDP。
 
 ## 2. 项目上下文
 这是一个 PX4 二次开发项目，当前聚焦在 STM32H7 最小系统板的板级适配。
@@ -217,8 +214,8 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - 当前 `dataman` 保持 PX4 官方默认 `/fs/microsd/dataman`，没有迁移到 `/fs/mtd_waypoints`。
 - QSPI `rwtest` 早期导致 QGC 断开，本质是 `w25qxxxjv.c` Flash busy wait 紧循环饿住 USB/MAVLink；加入 `nxsig_usleep(1000)` 后压力测试期间通信保持正常。
 - QSPI DMA 当前不是下一阶段优先项；在参数存储和小分区 MTD 场景中，当前 polling 模式已经通过验证。
-- 4G MAVLink 数传保留 `UART4 PH13/PH14` 给 JY901B，使用 UART5 的备用复用 `PB13/PB12`；UART5 原 `PC12/PD2` 复用与 SDMMC1 冲突，禁止恢复。
-- `CURRENT=PC4/P1-19/ADC1_INP4`，`VOLTAGE=PC5/P1-20/ADC1_INP8`，与 4G UART5 `PB13/PB12` 无冲突。
+- TEL2 / MAVLink 数传预留口使用 UART5 `PB13/PB12`；`UART4 PH13/PH14` 继续留给 JY901B；UART5 原 `PC12/PD2` 复用与 SDMMC1 冲突，禁止恢复。
+- `CURRENT=PC4/P1-19/ADC1_INP4`，`VOLTAGE=PC5/P1-20/ADC1_INP8`，与 TEL2 `UART5 PB13/PB12` 无冲突。
 
 ## 4. AI 续接规则
 如果 AI 读到这份文档，需要遵守：
@@ -738,6 +735,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/029_ICM42688P_SPI2_DMA读取调通与速率优化_2026-07-08_13-26-14|029 ICM42688P SPI2 DMA 读取调通与速率优化（杜邦线测试条件）2026-07-08 13:26:14]]
 - [[px4_flow_logs/030_H743mini蜂鸣器tone_alarm适配与上板发声验证_2026-07-08_23-16-35|030 H743mini 蜂鸣器 tone_alarm 适配与上板发声验证 2026-07-08 23:16:35]]
 - [[px4_flow_logs/031_4G_MAVLink数传与UART5备用引脚规划_2026-07-10_15-26-11|031 4G MAVLink 数传与 UART5 备用引脚规划 2026-07-10 15:26:11]]
+- [[px4_flow_logs/032_UART5_TEL2数传口角色收口与4G测试复盘_2026-07-14_22-50-00|032 UART5 TEL2 数传口角色收口与 4G 测试复盘 2026-07-14 22:50:00]]
 
 ## 14. 当前已占用引脚表
 
@@ -767,7 +765,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 | GPS1 | `PA2` / `PA3` | 规划为 `USART2_TX` / `USART2_RX` |
 | GPS1 外置罗盘 `IST8310` | `PB7` / `PB8` | 规划为 `I2C1_SDA` / `I2C1_SCL`，作为主磁力计 |
 | 副 IMU / 气压计 / 姿态参考 `JY901B` | `PH13` / `PH14` | 规划为 `UART4_TX` / `UART4_RX` |
-| 4G MAVLink 数传 | `PB13` / `PB12` | 规划为 `UART5_TX/P1-33` / `UART5_RX/P1-32`；保留 JY901B 的 UART4，不使用与 TF 卡冲突的 `PC12/PD2` |
+| TEL2 / MAVLink 数传预留 | `PB13` / `PB12` | `UART5_TX/P1-33` / `UART5_RX/P1-32`；优先普通数传电台/USB-TTL/其他 MAVLink 串口；**非 4G 专用口**；保留 JY901B 的 UART4，不使用与 TF 卡冲突的 `PC12/PD2` |
 | 电池电流检测 `CURRENT` | `PC4` | `P1-19 / ADC1_INP4`，接电源模块缩放后的电流模拟量 |
 | 电池电压检测 `VOLTAGE` | `PC5` | `P1-20 / ADC1_INP8`，接电源模块缩放后的电压模拟量，禁止直连电池正极 |
 | GD25Q128 QSPI | `PB2` | `QSPI_CLK`，已屏蔽 V6C 遗留 `GPIO_VDD_3V3_SENSORS_EN` |
@@ -776,7 +774,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 当前阶段先不规划：
 
 - `安全开关 / Safety LED`：当前 GPS 模块不包含完整 FMU-v6C GPS 口的安全开关和安全灯，第一阶段先不接入。
-- `4G 数传 / TELEM2`：已规划 UART5 `PB13/PB12`，当前仍依赖 USB/QGC 和 CH340/NSH 调试；源码适配与上板验证后再作为正式链路。
+- （已占用，见上表）`TEL2 / MAVLink 数传预留`：`UART5 PB13/PB12`；当前调试仍可用 USB/QGC 和 CH340/NSH；后续优先普通数传，不作为 4G 专用口。
 - `传感器恒温 heater`：当前最小系统板阶段先不做 IMU 恒温加热，后续不优先占用 `PB9` 做 heater。
 - `CAN / UAVCAN`：当前先不接 CAN 收发器，也不优先规划 UAVCAN 外设。
 
@@ -951,7 +949,7 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 
 - `USART1` 的 `PA9` / `PA10` 已作为 CH340/NSH 调试控制台，不再分给遥控接收机。
 - `USART2` 已规划给 GPS1，避免 GPS 和 RC 抢同一组串口。
-- `UART5` 的 `PC12` / `PD2` 复用组与 TF 卡 `SDMMC1` 冲突，不再使用；UART5 改用不冲突的 `PB13/PB12` 复用组承接 4G 数传。
+- `UART5` 的 `PC12` / `PD2` 复用组与 TF 卡 `SDMMC1` 冲突，不再使用；UART5 改用不冲突的 `PB13/PB12` 复用组承接 **TEL2 / MAVLink 数传预留口**（普通数传优先，非 4G 专用）。
 - `USART6` 的 `PC6` / `PC7` 在 FMU-v6C 原设计中用于 FMU 与 `PX4IO` 通信；当前 `gjl/h743mini` 已关闭 `PX4IO`，适合复用为 RCIN。
 
 源码注意：
@@ -1060,66 +1058,60 @@ PA15 说明：
 - `PB14` 后续也不要再规划给 LCD 背光相关功能，避免蜂鸣器音调输出和背光控制互相冲突。
 - 如果后续仍需要 `SDMMC2` 或 LCD 背光，应另选引脚，不再挪用 `PB14`。
 
-### 14.8 4G MAVLink 远程数传规划
+### 14.8 TEL2 / MAVLink 数传预留口（UART5 PB13/PB12）
 
-4G 数传使用 STM32H743 的 `UART5`，不是 `USART5`。为保留 TF 卡和现有全部外设规划，UART5 不使用当前板级遗留的 `PC12/PD2` 复用组，改用 `PB13/PB12`：
+**定位（2026-07-14 收口）：** `UART5 PB13/PB12` 为 **TEL2 / MAVLink 数传预留口**，后续优先用于普通数传电台、USB-TTL MAVLink 调试或其他 MAVLink 串口设备。  
+**不是 4G 专用口。** 4G DTU 公网链路仅作为阶段性测试经验记录，当前不作为默认推进方向。
 
-| 4G DTU 信号 | H743mini 引脚 | STM32 外设 | 排针位置 | 连接说明 |
-|---|---|---|---|---|
-| `RXD` | `PB13` | `UART5_TX` | `P1-33` | 飞控发送，接 DTU RXD |
-| `TXD` | `PB12` | `UART5_RX` | `P1-32` | DTU 发送，接飞控 RX |
-| `GND` | `GND` | 共地 | 就近 GND | DTU 与飞控必须共地 |
-| `VIN` | 独立稳压电源 | 电源 | 按模块手册 | 不从弱电流 GPIO/小电流口直接供电 |
+使用 STM32H743 的 `UART5`（不是 `USART5`）。为保留 TF 卡和现有外设规划，UART5 **禁止**使用与 SDMMC1 冲突的 `PC12/PD2`，固定使用 `PB13/PB12`。
 
-保留关系：
+#### 普通数传接线
+
+| 数传模块 | H743mini | 说明 |
+|---|---|---|
+| `RXD` | `PB13` / `UART5_TX` / TEL2_TX / `P1-33` | 飞控发送到数传 |
+| `TXD` | `PB12` / `UART5_RX` / TEL2_RX / `P1-32` | 数传发送到飞控 |
+| `GND` | `GND` | 必须共地 |
+| `VIN` | 按数传模块手册供电 | 不从 GPIO 供电，注意电压和电流 |
+
+#### 保留关系与避让
 
 ```text
 UART4  PH13/PH14  -> JY901B，保持不变
-UART5  PB13/PB12  -> 4G MAVLink / TEL2，新增规划
+UART5  PB13/PB12  -> TEL2 / MAVLink 数传预留（普通数传优先）
 USART2 PA2/PA3    -> GPS1，保持不变
 USART6 PC6/PC7    -> RCIN/CRSF，保持不变
 PC8~PC12、PD2     -> TF 卡 SDMMC1，保持不变
 PC4/PC5           -> CURRENT/VOLTAGE，保持不变
 ```
 
-当前源码状态与后续修改边界：
+已验证：该口与 TF 卡、JY901B、GPS、CRSF、电池 ADC 等规划 **无冲突**。
 
-- `board.h` 当前仍把 UART5 定义为 `GPIO_UART5_RX_3=PD2`、`GPIO_UART5_TX_3=PC12`，后续应切换为 `_1` 对应的 `PB12/PB13`。
-- `PB12` 当前残留为 FMUv6C `GPIO_nPOWER_IN_B / Brick2 valid`；当前最小系统板没有规划完整的双路 Brick valid 功能，实现 UART5 时需要释放该遗留定义。
-- `PB13` 当前残留为 `CAN2_TX`；当前 UAVCAN 已关闭，CAN2 收发器路径也未确认，实现 UART5 后不再把 PB13 用作 CAN2_TX。
-- UART5、UART5 RX/TX DMA 和 `TEL2` 当前尚未启用，4G 数传仍是规划状态。
-- 两线 DTU 不接 RTS/CTS，后续设置 `MAV_1_FLOW_CTRL=0`。
+#### PX4 侧描述（保留，不回退已有 UART5/TEL2 适配）
 
-最终同时启用 UART4 和 UART5 后，预计串口设备顺序为：
+```text
+TEL2 对应 UART5 /dev/ttyS4
+SER_TEL2_BAUD=115200（当前）
+MAV_1_CONFIG=102
+MAV_1_MODE=0          # Normal
+MAV_1_FLOW_CTRL=0     # 两线数传不接 RTS/CTS
+MAV_1_RADIO_CTL=0
+MAV_1_RATE=5000       # 后续数传稳定后可再评估提高
+```
+
+预计串口设备顺序（以构建产物 `rc.serial_port` 与板上 `/dev/ttyS*` 实测为准）：
 
 ```text
 USART1 -> /dev/ttyS0  CH340/NSH
 USART2 -> /dev/ttyS1  GPS1
 USART3 -> /dev/ttyS2  当前未分配
 UART4  -> /dev/ttyS3  JY901B
-UART5  -> /dev/ttyS4  4G MAVLink / TEL2
+UART5  -> /dev/ttyS4  TEL2 / MAVLink 数传预留
 USART6 -> /dev/ttyS5  RCIN/CRSF
-UART7  -> /dev/ttyS6
-UART8  -> /dev/ttyS7
 ```
 
-设备号必须以修改后的构建产物 `rc.serial_port` 和板上 `/dev/ttyS*` 实测为准，不能在 UART4 尚未启用时提前把 UART5 固定写成 `/dev/ttyS3`。
+#### 4G 阶段性测试（历史记录，非当前主线）
 
-第一版参数起点：
-
-```text
-MAV_1_CONFIG=102
-MAV_1_MODE=0
-MAV_1_FLOW_CTRL=0
-MAV_1_RADIO_CTL=0
-SER_TEL2_BAUD=115200
-MAV_1_RATE=5000~8000
-```
-
-安全与供电约束：
-
-- DTU UART IO 必须与 STM32H743 的 3.3V TTL 兼容，不能只根据 VIN 支持 5V/12V 就判断串口电平安全。
-- 4G 发射有瞬时电流需求，应按模块手册单独设计稳压、去耦和峰值电流余量，并与飞控共地。
-- 服务器 UDP relay 需要处理 DTU/QGC 两端 NAT、端点学习、超时与重连。
-- 公网裸 UDP MAVLink 存在命令注入风险，正式使用时需要访问控制，并优先采用 VPN、加密隧道或应用层鉴权。
-- 当前阶段只完成规划，尚未修改 PX4 源码、编译、烧录或上板验证。
+- 曾用同一 UART5 口接 4G DTU，经运营商 NAT、腾讯云 UDP `14560` relay，QGC 可识别链路。
+- 公网体验刷新慢、链路长，不适合作为早期板级主调试手段；用户已决定暂不继续推进 4G。
+- 将来若再启用 4G：仍可复用本口，但需重验 DTU 参数、服务器 relay、防火墙与 QGC UDP；正式使用须考虑鉴权/VPN，公网裸 UDP 有命令注入风险。

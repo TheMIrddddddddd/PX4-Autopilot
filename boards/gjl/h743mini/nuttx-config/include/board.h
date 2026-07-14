@@ -372,8 +372,11 @@
 #define GPIO_USART3_RX   GPIO_USART3_RX_3   /* PD9   */
 #define GPIO_USART3_TX   GPIO_USART3_TX_3   /* PD8   */
 
-#define GPIO_UART5_RX    GPIO_UART5_RX_3    /* PD2  */
-#define GPIO_UART5_TX    GPIO_UART5_TX_3    /* PC12 */
+#define GPIO_UART4_RX    GPIO_UART4_RX_6    /* PH14 */
+#define GPIO_UART4_TX    GPIO_UART4_TX_6    /* PH13 */
+
+#define GPIO_UART5_RX    GPIO_UART5_RX_1    /* PB12 */
+#define GPIO_UART5_TX    GPIO_UART5_TX_1    /* PB13 */
 // GPIO_UART5_RTS   no remap                /* PC8  */
 // GPIO_UART5_CTS  No remap                 /* PC9  */
 
