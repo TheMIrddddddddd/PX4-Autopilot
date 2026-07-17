@@ -1,0 +1,5 @@
+menuconfig DRIVERS_IMU_JY901B
+	bool "jy901b"
+	default n
+	---help---
+		Enable support for the WitMotion JY901B serial IMU

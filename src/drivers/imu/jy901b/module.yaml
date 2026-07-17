@@ -1,0 +1,25 @@
+module_name: JY901B
+
+parameters:
+    - group: Sensors
+      definitions:
+        SENS_JY901_EN:
+            description:
+                short: JY901B automatic startup
+                long: |
+                    Enable automatic startup of the JY901B driver on the
+                    H743mini dedicated UART. Keep disabled until the sensor
+                    is calibrated and its priority is configured below the
+                    primary IMU.
+            type: boolean
+            default: 0
+            reboot_required: true
+        SENS_JY901_ROT:
+            description:
+                short: JY901B sensor rotation
+                long: Rotation from the JY901B sensor frame to the vehicle body frame.
+            type: int32
+            min: 0
+            max: 40
+            default: 0
+            reboot_required: true

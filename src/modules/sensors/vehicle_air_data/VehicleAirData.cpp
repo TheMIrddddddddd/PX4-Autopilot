@@ -33,6 +33,8 @@
 
 #include "VehicleAirData.hpp"
 
+#include <drivers/drv_sensor.h>
+#include <lib/drivers/device/Device.hpp>
 #include <px4_platform_common/log.h>
 #include <px4_platform_common/events.h>
 #include <lib/geo/geo.h>
@@ -184,6 +186,18 @@ void VehicleAirData::Run()
 						}
 
 						ParametersUpdate(true);
+					}
+
+					if (_validator_device_id[uorb_index] != report.device_id) {
+						device::Device::DeviceId device_id{};
+						device_id.devid = report.device_id;
+
+						const uint32_t equal_value_threshold =
+							(device_id.devid_s.devtype == DRV_BARO_DEVTYPE_JY901B) ?
+							UINT32_MAX : DataValidator::VALUE_EQUAL_COUNT_DEFAULT;
+
+						_voter.set_equal_value_threshold(uorb_index, equal_value_threshold);
+						_validator_device_id[uorb_index] = report.device_id;
 					}
 
 					// pressure corrected with offset (if available)

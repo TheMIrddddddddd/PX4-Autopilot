@@ -79,7 +79,9 @@ void DataValidator::put(uint64_t timestamp, const float val[dimensions], uint32_
 				_rms[i] = sqrtf(_M2[i] / (_event_count - 1));
 
 				if (fabsf(_value[i] - val[i]) < 0.000001f) {
-					_value_equal_count++;
+					if (_value_equal_count < UINT32_MAX) {
+						_value_equal_count++;
+					}
 
 				} else {
 					_value_equal_count = 0;

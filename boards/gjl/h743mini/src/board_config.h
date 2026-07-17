@@ -78,6 +78,9 @@
 
 /* PX4FMU GPIOs ***********************************************************************************/
 
+/* USART6 PC6/PC7 is used for ELRS/CRSF receiver input. */
+#define RC_SERIAL_PORT                         "/dev/ttyS5"
+#define BOARD_SUPPORTS_RC_SERIAL_PORT_OUTPUT
 
 /* LEDs are driven with push pull Anodes to 3.3V */
 

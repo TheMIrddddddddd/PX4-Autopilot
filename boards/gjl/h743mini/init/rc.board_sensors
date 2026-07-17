@@ -23,6 +23,13 @@
 # Internal SPI bus ICM42688p
 icm42688p -R 0 -s -f 2000 start
 
+# JY901B on UART4 PH13/PH14 (/dev/ttyS3). Keep disabled until calibration
+# and sensor priorities are configured below the primary ICM42688P.
+if param compare SENS_JY901_EN 1
+then
+	jy901b -d /dev/ttyS3 -R p:SENS_JY901_ROT start
+fi
+
 # Internal barometer on I2C4 (The same bus is also exposed externally, and therefore marked as external)
 # ms5611 -X -b 4 -a 0x77 start
 

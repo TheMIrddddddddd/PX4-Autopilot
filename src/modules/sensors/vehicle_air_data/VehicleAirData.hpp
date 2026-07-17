@@ -120,6 +120,7 @@ private:
 	float _sensor_diff[MAX_SENSOR_COUNT] {}; // filtered differences between sensor instances
 
 	uint8_t _priority[MAX_SENSOR_COUNT] {};
+	uint32_t _validator_device_id[MAX_SENSOR_COUNT] {};
 
 	int8_t _selected_sensor_sub_index{-1};
 

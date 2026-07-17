@@ -131,6 +131,14 @@ public:
 	 */
 	void set_equal_value_threshold(uint32_t threshold);
 
+	/**
+	 * Set the equal count threshold for one validator.
+	 *
+	 * @param index Sensor index
+	 * @param threshold The number of equal values before considering the sensor stale
+	 */
+	void set_equal_value_threshold(unsigned index, uint32_t threshold);
+
 private:
 	DataValidator *_first{nullptr}; /**< first node in the group */
 	DataValidator *_last{nullptr};  /**< last node in the group */
