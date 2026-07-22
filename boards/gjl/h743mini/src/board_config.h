@@ -166,7 +166,7 @@
 
 /* PWM
  */
-#define DIRECT_PWM_OUTPUT_CHANNELS   8
+#define DIRECT_PWM_OUTPUT_CHANNELS   6
 
 
 /* Power supply control and monitoring GPIOs
@@ -290,7 +290,7 @@
 #define BOARD_OVERRIDE_I2C_DEVICE_EXTERNAL
 
 
-#define BOARD_NUM_IO_TIMERS 5
+#define BOARD_NUM_IO_TIMERS 2
 
 __BEGIN_DECLS
 
