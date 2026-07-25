@@ -7,15 +7,13 @@
 # Keep V6C inherited defaults disabled until the matching hardware path is
 # actually wired, enabled, and verified.
 
-# V6C battery voltage/current defaults.
-# Disabled for now because battery_status and board_adc are not enabled in the
-# current minimal firmware, and the real H743mini power-module scaling is not
-# verified yet.
-#
-# param set-default BAT1_V_DIV 18.1
-# param set-default BAT2_V_DIV 18.1
-# param set-default BAT1_A_PER_V 36.367515152
-# param set-default BAT2_A_PER_V 36.367515152
+# PM02 analog power module calibration.
+# PM02: voltage divider 18.182, current conversion 36.364 A/V.
+param set-default BAT1_SOURCE 0
+param set-default BAT1_V_DIV 18.182
+param set-default BAT1_A_PER_V 36.364
+param set-default BAT1_N_CELLS 3
+param set-default BAT1_CAPACITY 5300
 
 # V6C MAVLink Ethernet defaults.
 # Disabled for now because H743mini currently uses USB/QGC and CH340/NSH, and

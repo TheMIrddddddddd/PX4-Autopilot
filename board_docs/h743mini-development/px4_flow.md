@@ -23,6 +23,8 @@
 ## 1. 当前状态
 当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动已统一转换为 PX4 `X前/Y右/Z下` 坐标，默认仍不自动启动，等待重新校准和主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。最近一次提交已完成六路 Direct PWM 的源码配置：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；该结论仅到源码层，尚未补充本轮构建输出、示波器波形或上板电调验证。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
 
+2026-07-26 更新：PM02 的 `board_adc`、`battery_status`、`PC4/PC5` ADC 通道和 3S 5300 mAh 默认参数已配置并构建通过；模块未接时 ADC 浮空会产生约 `60 V / 120 A / 0%` 的假电池状态，不能当作真实掉电。GPS1 驱动已启用，当前真实 UART 映射为 `PA3=USART2_RX`、`PA2=USART2_TX`，外置 IST8310 预留 `PB7/PB8=I2C1_SDA/SCL`，现在可以开始接入 PM02 和 GPS + IST8310 实物。ELRS/CRSF 已实测识别为 CRSF、16 通道且遥测可用；仍缺少真实 RF 断链 failsafe 测试。用户口述已看到至少部分 Direct PWM 约 `400 Hz` 波形，但六路顺序、M5/M6 和电调 Actuator Test 仍未完成。
+
 当前优先烧录方式：
 
 ```text
@@ -139,12 +141,13 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - `/fs/mtd_caldata` 当前没有工厂校准数据；未启用 `SYS_FAC_CAL_MODE` 前，`param dump /fs/mtd_caldata` 显示 BSON no data 属于正常状态。
 - GD25Q128 当前采用 QSPI polling 模式，DMA 未启用；当前测试已稳定，DMA 不是下一步阻塞项。
 - `ICM42688P` 已在杜邦线临时外接条件下完成 SPI2 DMA 稳定读取，但实际安装方向 `-R 0` 仍需结合载板方向复核；高速 SPI 频率余量需要等 PCB 画完后再测试。
-- `GPS/IST8310` 尚未完成接线和上板验证；JY901B 已接入，但坐标修改后必须重新执行 accel/gyro/mag 校准，并完成与 ICM42688P 的主副优先级和故障切换测试。
-- ELRS/CRSF 当前只完成驱动和串口启动验证，接收机到货后仍需完成绑定、通道、failsafe 和遥测回传验证。
-- `GPS_1_CONFIG=0` 已用于解除 GPS1 对 `/dev/ttyS0` 的默认占用；后续仍需为真实 GPS 接口重新规划板级串口角色。
+- `GPS/IST8310` 已具备 `USART2 PA2/PA3` 与 `I2C1 PB7/PB8` 的板级配置，但尚未完成实物接线、卫星定位、IST8310 读数和校准；JY901B 已接入，但坐标修改后必须重新执行 accel/gyro/mag 校准，并完成与 ICM42688P 的主副优先级和故障切换测试。
+- ELRS/CRSF 已完成绑定、16 通道输入和双向遥测实测；仍需关闭遥控器或接收机电源，验证 PX4 的真实 RF 丢失 failsafe 行为。
+- GPS 接入后需要将 `GPS_1_CONFIG` 设为 `201`，使 GPS1 使用 `/dev/ttyS1`；当前无需再改动 `USART2` 的 PA2/PA3 板级复用。
+- PM02 尚未实物接入。USB 供电且 `PC4/PC5` 浮空时，PX4 会显示约 `60 V / 120 A / 0%` 的假电池状态；接线前不可依据该状态判断电量，模块暂不接时可临时设置 `BAT1_SOURCE=-1`。
 - `No autostart ID found` 场景下仍会直接尝试启动 `ekf2`；当前已有 ICM42688P IMU，但 Baro、Compass、GPS 等外设尚未完整接入，EKF2 状态仍需继续验证。
 - PX4IO、UAVCAN、部分串口和传感器启动项还需要按当前最小系统板裁剪。
-- 六路 Direct PWM 仅完成源码配置，尚未在当前 H743mini 实板确认输出顺序、频率、电平和与电调的实际兼容性；`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
+- 用户已口述观察到约 `400 Hz` 的 PWM 波形，但尚未在当前 H743mini 实板完整确认六路输出顺序、M5/M6、电平和与电调的实际兼容性；`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
 - `UART5 PB13/PB12` 文档定位已收口为 TEL2 / MAVLink 数传预留口；4G 公网链路曾做过阶段性测试，但体验不理想，当前不继续作为主调试链路推进。优先恢复 IMU/姿态数据后，再用普通数传验证 QGC。
 
 ### 1.1 当前阶段启动约束
@@ -156,23 +159,22 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - `dmesg` 中出现 `importing from '/fs/microsd/params'`
   - `dmesg` 中出现 `data manager file '/fs/microsd/dataman'`
   - `dmesg` 中出现 `logger started`
-- 当前主线不是继续纠缠 TF 卡软复位问题，而是在“冷启动可用”的前提下，重新校准 JY901B、验证双 IMU 坐标与投票，并继续接入 GPS/IST8310 和 ELRS 接收机。
+- 当前主线不是继续纠缠 TF 卡软复位问题，而是在“冷启动可用”的前提下，接入并验证 PM02、GPS/IST8310，重新校准 JY901B、验证双 IMU 坐标与投票，并完成 ELRS 的 RF 丢失 failsafe。
 
 ### 1.2 下一阶段任务和目标
-下一阶段目标：先完成 JY901B 坐标修改后的重新校准和双 IMU 对比，再接入 GPS/IST8310 与 ELRS 接收机；TEL2 继续作为普通 MAVLink 数传预留口，暂不推进 4G 公网链路。
+下一阶段目标：先完成 PM02 与 GPS/IST8310 的实物接线和最小闭环验证，再完成 JY901B 坐标修改后的重新校准、双 IMU 对比和 ELRS 的 RF 丢失 failsafe；TEL2 继续作为普通 MAVLink 数传预留口，暂不推进 4G 公网链路。
 
 优先任务：
 
-1. 检查 `icm42688p status`、`listener sensor_accel 1`、`listener sensor_gyro 1`、`listener vehicle_attitude 1`、`ekf2 status`。
-2. 保持 `ICM42688P` 当前稳定工作点：`2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`，不要在杜邦线接法下继续追高 SPI 频率。
-3. 确认本体能产生姿态数据后，在 `UART5 PB13/PB12`（TEL2）上接普通数传电台或 USB-TTL，验证 QGC 收 HEARTBEAT / SYS_STATUS / ATTITUDE 等。
-4. 数传稳定后，再评估是否提高 `MAV_1_RATE` 或 `SER_TEL2_BAUD`（当前默认约 115200 / MAVLink Normal / 流控关）。
-5. 再适配 `GPS + IST8310`：`USART2 PA2/PA3`，`I2C1 PB7/PB8` 启动 `ist8310` 主磁力计。
-6. 对已接入的 `JY901B` 重新执行 accel/gyro/mag 校准，核对与 ICM42688P 的三轴正负方向、优先级和故障切换。
-7. 先构建并安全验证已配置的六路 Direct PWM：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；先看波形和输出顺序，再接电调，测试全程不装桨。
-8. ELRS 接收机到货后，在已启用的 `USART6 PC6/PC7` RCIN/CRSF 链路上完成通道、failsafe 和遥测回传验证。
-9. 临时关闭或延后 PX4IO、UAVCAN、无用启动项；需要时再完整复测 MTD/冷启动存储链路。
-10. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC UDP。
+1. PM02 接入前核对实物针序，量 `5V`、`CURR`、`VOLT`；接入后检查 `listener adc_report`、`listener battery_status` 是否显示可信 3S 电压和近零静置电流，且避免 USB 与 PM02 的 5V 反灌。
+2. 接入 GPS 后设置 `GPS_1_CONFIG=201`，用 `gps status`、`listener sensor_gps` 验证 `/dev/ttyS1` 数据；用 `i2cdetect -b 1` 和 `ist8310 -X -b 1 -R 0 start` 验证外置 IST8310。
+3. 检查 `icm42688p status`、`listener sensor_accel 1`、`listener sensor_gyro 1`、`listener vehicle_attitude 1`、`ekf2 status`；保持 `ICM42688P` 当前稳定工作点，不要在杜邦线接法下继续追高 SPI 频率。
+4. 对已接入的 `JY901B` 重新执行 accel/gyro/mag 校准，核对与 ICM42688P 的三轴正负方向、优先级和故障切换。
+5. 关闭遥控器或接收机电源，验证已接入的 ELRS/CRSF 在 RF 丢失时的 `input_rc`、`vehicle_status` 和 failsafe 行为。
+6. 在不装桨条件下补齐已配置六路 Direct PWM 的输出顺序、M5/M6、脉宽、电平和 Actuator Test；确认后才接电调。
+7. 确认本体能稳定产生姿态数据后，在 `UART5 PB13/PB12`（TEL2）上接普通数传电台或 USB-TTL，验证 QGC 收 HEARTBEAT / SYS_STATUS / ATTITUDE 等，并按需要评估 `MAV_1_RATE` 或 `SER_TEL2_BAUD`。
+8. 临时关闭或延后 PX4IO、UAVCAN、无用启动项；需要时再完整复测 MTD/冷启动存储链路。
+9. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC UDP。
 
 ## 2. 项目上下文
 这是一个 PX4 二次开发项目，当前聚焦在 STM32H7 最小系统板的板级适配。
@@ -756,6 +758,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/033_ELRS_CRSF接收机驱动启用与串口启动验证_2026-07-17_14-16-33|033 ELRS CRSF 接收机驱动启用与串口启动验证 2026-07-17 14:16:33]]
 - [[px4_flow_logs/034_JY901B_UART4_RX_DMA驱动与四类传感器验证_2026-07-17_21-42-07|034 JY901B UART4 RX DMA 驱动与四类传感器验证 2026-07-17 21:42:07]]
 - [[px4_flow_logs/035_六路Direct_PWM源码配置_2026-07-25_19-22-12|035 六路 Direct PWM 源码配置 2026-07-25 19:22:12]]
+- [[px4_flow_logs/036_PM02电池ADC配置与GPS接入准备_2026-07-26_00-49-56|036 PM02 电池 ADC 配置与 GPS 接入准备 2026-07-26 00:49:56]]
 
 ## 14. 当前已占用引脚表
 
@@ -862,18 +865,13 @@ JY901B：副 IMU / 气压计 / 姿态参考，先走 UART4
 
 ### 14.2 GPS1 规划
 
-当前 GPS1 候选模块先按图片资料记录为：
+用户计划接入的 GPS1 模块为带 IST8310 的 M9 组合；接线前仍须以实物丝印、插座针序和规格书为准：
 
 ```text
-型号：SR25M10DI
-GNSS 芯片/方案：M10050 / M10
+型号：MG-903 M9
 罗盘：IST8310
 接口座：GH1.25mm 6pin
 接口信号：GND / SDA / SCL / RX / TX / VCC
-协议：NMEA / UBX
-芯片默认波特率：38400 bps
-模块出厂波特率：115200 bps
-供电：DC 3.3V - 5V，典型 5V
 ```
 
 GPS1 当前规划优先使用 `USART2`，走第一张 GPIO 排针，方便用杜邦线引出调试：
@@ -896,7 +894,9 @@ GPS1 当前规划优先使用 `USART2`，走第一张 GPIO 排针，方便用杜
 
 源码注意：
 
-- 当前 `boards/gjl/h743mini/nuttx-config/include/board.h` 里 `USART2_TX` 仍配置为 `PD5`，如果实际按 `PA2` 接 GPS，需要后续把 `GPIO_USART2_TX` 改到 `PA2` 对应复用。
+- 当前 `boards/gjl/h743mini/nuttx-config/include/board.h` 已配置 `GPIO_USART2_RX=PA3`、`GPIO_USART2_TX=PA2`，与上表接线一致，无需再为 GPS 改动 USART2 引脚复用。
+- 当前 `default.px4board` 已启用 `CONFIG_DRIVERS_GPS=y`，GPS1 设备为 `/dev/ttyS1`；实物接入后设置 `GPS_1_CONFIG=201`、`GPS_1_PROTOCOL=1`、`SER_GPS1_BAUD=0`，保存并重启后用 `gps status`、`listener sensor_gps` 验证。
+- `rc.board_sensors` 里的外置 `ist8310` 启动命令仍保持注释。先以 `i2cdetect -b 1` 确认地址 `0x0e`，再使用 `ist8310 -X -b 1 -R 0 start` 探测；确认实际安装方向并完成校准后，才固化方向与自动启动策略。
 
 安装约束：
 
@@ -918,7 +918,7 @@ GPS1 当前规划优先使用 `USART2`，走第一张 GPIO 排针，方便用杜
 电机、电调、大电流供电链路先和飞控逻辑供电分开验证。
 ```
 
-后续如果接类似 `PM02 V3` 的电源模块，优先按下面方式预留：
+当前已按 PM02 模块完成软件配置，实物接入时按下面方式连接：
 
 | 电源模块信号 | H743mini 引脚 | STM32 外设 | 连接说明 |
 |---|---|---|---|
@@ -931,13 +931,15 @@ GPS1 当前规划优先使用 `USART2`，走第一张 GPIO 排针，方便用杜
 
 - `PC4` / `PC5` 是当前源码里沿用 FMU-v6C 风格预留的电池电流、电压 ADC 引脚。
 - `PA2` 已规划给 GPS1 的 `USART2_TX`，不再优先作为第二路电流 ADC 使用。
-- 开发早期没有接电源模块时，PX4 可以先不依赖电流计；真正飞行前再补电池电压/电流检测更稳。
+- `CONFIG_DRIVERS_ADC_BOARD_ADC=y`、`CONFIG_MODULES_BATTERY_STATUS=y`、`board_adc start` 已启用；`PC4/PC5` 已纳入 `ADC_CHANNELS`。
+- 当前默认值为 `BAT1_SOURCE=0`、`BAT1_V_DIV=18.182`、`BAT1_A_PER_V=36.364`、`BAT1_N_CELLS=3`、`BAT1_CAPACITY=5300`，对应 PM02 和计划使用的 3S 5300 mAh 电池。它们只是默认参数，后续可以在 QGroundControl 或 NSH 校准并保存。
 
 接线风险：
 
 - 不能把电池正极直接接到 `PC5`，必须经过电源模块或分压电路，保证 ADC 输入不超过 `3.3V`。
 - `CURR` / `VOLT` 接入前要先用万用表量电压范围，确认空载、低油门、高油门都不会超过 STM32 ADC 允许范围。
-- 当前 `gjl/h743mini` 配置里电池检测相关模块还没有完整启用，后续真正接入 PM02 时，需要同步检查 `ADC` 驱动、`battery_status` 模块和参数标定。
+- PM02 未接、仅用 USB 供电时，`PC4/PC5` 浮空可被读为接近 `3.3 V`，会按当前比例显示约 `60 V / 120 A / 0%` 的假电池状态。这不是电池掉电；模块暂不接时可临时设置 `BAT1_SOURCE=-1`，接入后再恢复 `0`。
+- PM02 给飞控供电时，避免把 USB `5V` 与 PM02 `5V` 未隔离并接，防止两路电源反灌。接入后用 `listener adc_report` 和 `listener battery_status` 确认可信 3S 电压、近零静置电流和合理剩余电量，再在 QGroundControl 校准。
 
 ### 14.4 RCIN 遥控接收机规划
 
@@ -981,7 +983,7 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 
 - 当前 `boards/gjl/h743mini/nuttx-config/include/board.h` 中 `USART6_RX` 是 `PC7`，`USART6_TX` 是 `PC6`。
 - 当前 `boards/gjl/h743mini/src/board_config.h` 中仍保留 `PX4IO_SERIAL_DEVICE "/dev/ttyS4"` 和 `GPIO_USART6_TX/RX`，后续可把这组 `/dev/ttyS4` 作为 `RC_SERIAL_PORT` 复用。
-- 当前 `boards/gjl/h743mini/default.px4board` 已启用 `rc_input`，`RC_SERIAL_PORT=/dev/ttyS5` 已上板进入 CRSF 扫描状态；真实接收机数据和遥测仍待硬件到货后验证。
+- 当前 `boards/gjl/h743mini/default.px4board` 已启用 `rc_input`，`RC_SERIAL_PORT=/dev/ttyS5` 已实测识别 CRSF，接收到 16 通道且 `CRSF Telemetry: yes`；仍需实测关闭遥控器或接收机后的 RF 丢失 failsafe。
 - `src/drivers/rc_input/RCInput.cpp` 已支持 `TBS Crossfire (CRSF)`；ELRS 接收机输出的 CRSF 可走同一解析路径。
 - `src/lib/rc/crsf.cpp` 中 CRSF 串口波特率为 `420000`，解析的核心帧类型是 `rc_channels_packed`。
 
@@ -1023,7 +1025,7 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 
 - PWM 只接电调信号线与地线，不从 STM32 GPIO 给电调供电；大电流电池线、电调供电和飞控逻辑供电必须分开处理。
 - 首次测试不得安装螺旋桨。先以示波器或逻辑分析仪确认六个引脚的波形、频率和输出顺序，再逐路连接电调。
-- 本轮没有新的 `make` 输出、烧录记录、`pwm info` 输出、示波器截图或实板日志；六路输出当前状态是“源码已配置，硬件未验收”。
+- 用户口述已看到至少部分约 `400 Hz` 波形，但本轮没有逐路截图、`pwm info`、输出顺序或 Actuator Test 记录；六路输出仍未完成完整硬件验收。
 
 ### 14.6 LED / 普通 GPIO 重映射候选
 
