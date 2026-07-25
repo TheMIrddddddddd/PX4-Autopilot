@@ -21,7 +21,7 @@
 7. 如果遇到问题，看“调试方法”和“常见坑”。
 
 ## 1. 当前状态
-当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动已统一转换为 PX4 `X前/Y右/Z下` 坐标，默认仍不自动启动，等待重新校准和主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
+当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动已统一转换为 PX4 `X前/Y右/Z下` 坐标，默认仍不自动启动，等待重新校准和主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。最近一次提交已完成六路 Direct PWM 的源码配置：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；该结论仅到源码层，尚未补充本轮构建输出、示波器波形或上板电调验证。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
 
 当前优先烧录方式：
 
@@ -121,6 +121,11 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - 已修复 STM32H7 `tone_alarm` PWM 接口中 APB1L TIMxEN 位宏兼容问题，使 `TIM12` 能通过 `RCC_APB1LENR_TIM12EN` 兼容旧式 `RCC_APB1ENR_TIM12EN` 命名。
   - `make gjl_h743mini_default` 已验证通过，FLASH 使用约 `88.42%`。
   - 上板后蜂鸣器已有声音，说明 `tone_alarm -> TIM12_CH1 -> PB14 -> 蜂鸣器` 链路已跑通。
+- 已完成六路 Direct PWM 源码配置（提交 `6117992417`）：
+  - `DIRECT_PWM_OUTPUT_CHANNELS` 已从 `8` 收口为 `6`，`BOARD_NUM_IO_TIMERS` 已从 `5` 收口为 `2`。
+  - `TIM2_CH1~CH4` 已映射为 `MAIN1~MAIN4`，引脚为 `PA15/PB3/PB10/PB11`；`TIM3_CH1~CH2` 已映射为 `MAIN5 / AUX1`、`MAIN6 / AUX2`，引脚为 `PB4/PB5`。
+  - Direct PWM 由 PX4 `io_timer` 直接接管时要求 NuttX 通用 `TIMx` 驱动保持关闭，因此移除了遗留 `CONFIG_STM32H7_TIM1`、`TIM4`、`TIM5`；不要为这六路输出额外启用 `CONFIG_STM32H7_TIM2` 或 `TIM3`。
+  - 本轮仅核实 Git 提交和源码关系，尚未新增该六路输出的构建日志、板级波形或电调验证记录。
 - 已屏蔽 V6C 遗留电源 GPIO 与当前 H743mini 引脚冲突：
   - `PB2` 不再初始化/驱动为 `GPIO_VDD_3V3_SENSORS_EN`，保留给 GD25Q128 `QSPI_CLK`。
   - `PC10/PC11` 不再初始化/驱动为 `VDD_5V_HIPOWER` 使能/过流检测，保留给 TF 卡 `SDMMC1 D2/D3`。
@@ -139,6 +144,7 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - `GPS_1_CONFIG=0` 已用于解除 GPS1 对 `/dev/ttyS0` 的默认占用；后续仍需为真实 GPS 接口重新规划板级串口角色。
 - `No autostart ID found` 场景下仍会直接尝试启动 `ekf2`；当前已有 ICM42688P IMU，但 Baro、Compass、GPS 等外设尚未完整接入，EKF2 状态仍需继续验证。
 - PX4IO、UAVCAN、部分串口和传感器启动项还需要按当前最小系统板裁剪。
+- 六路 Direct PWM 仅完成源码配置，尚未在当前 H743mini 实板确认输出顺序、频率、电平和与电调的实际兼容性；`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
 - `UART5 PB13/PB12` 文档定位已收口为 TEL2 / MAVLink 数传预留口；4G 公网链路曾做过阶段性测试，但体验不理想，当前不继续作为主调试链路推进。优先恢复 IMU/姿态数据后，再用普通数传验证 QGC。
 
 ### 1.1 当前阶段启动约束
@@ -163,7 +169,7 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 4. 数传稳定后，再评估是否提高 `MAV_1_RATE` 或 `SER_TEL2_BAUD`（当前默认约 115200 / MAVLink Normal / 流控关）。
 5. 再适配 `GPS + IST8310`：`USART2 PA2/PA3`，`I2C1 PB7/PB8` 启动 `ist8310` 主磁力计。
 6. 对已接入的 `JY901B` 重新执行 accel/gyro/mag 校准，核对与 ICM42688P 的三轴正负方向、优先级和故障切换。
-7. 按当前引脚规划推进四路电机 PWM：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`。
+7. 先构建并安全验证已配置的六路 Direct PWM：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；先看波形和输出顺序，再接电调，测试全程不装桨。
 8. ELRS 接收机到货后，在已启用的 `USART6 PC6/PC7` RCIN/CRSF 链路上完成通道、failsafe 和遥测回传验证。
 9. 临时关闭或延后 PX4IO、UAVCAN、无用启动项；需要时再完整复测 MTD/冷启动存储链路。
 10. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC UDP。
@@ -749,6 +755,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/032_UART5_TEL2数传口角色收口与4G测试复盘_2026-07-14_22-50-00|032 UART5 TEL2 数传口角色收口与 4G 测试复盘 2026-07-14 22:50:00]]
 - [[px4_flow_logs/033_ELRS_CRSF接收机驱动启用与串口启动验证_2026-07-17_14-16-33|033 ELRS CRSF 接收机驱动启用与串口启动验证 2026-07-17 14:16:33]]
 - [[px4_flow_logs/034_JY901B_UART4_RX_DMA驱动与四类传感器验证_2026-07-17_21-42-07|034 JY901B UART4 RX DMA 驱动与四类传感器验证 2026-07-17 21:42:07]]
+- [[px4_flow_logs/035_六路Direct_PWM源码配置_2026-07-25_19-22-12|035 六路 Direct PWM 源码配置 2026-07-25 19:22:12]]
 
 ## 14. 当前已占用引脚表
 
@@ -782,7 +789,12 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 | 电池电流检测 `CURRENT` | `PC4` | `P1-19 / ADC1_INP4`，接电源模块缩放后的电流模拟量 |
 | 电池电压检测 `VOLTAGE` | `PC5` | `P1-20 / ADC1_INP8`，接电源模块缩放后的电压模拟量，禁止直连电池正极 |
 | GD25Q128 QSPI | `PB2` | `QSPI_CLK`，已屏蔽 V6C 遗留 `GPIO_VDD_3V3_SENSORS_EN` |
-| 电机 PWM 预留 | `PA15` | 规划为 `TIM2_CH1 / M1 PWM`，已屏蔽 V6C 遗留 `GPIO_nPOWER_IN_A` 读取 |
+| Direct PWM `MAIN1 / M1` | `PA15` | `TIM2_CH1`；已屏蔽 V6C 遗留 `GPIO_nPOWER_IN_A` 初始化，待实板波形验证 |
+| Direct PWM `MAIN2 / M2` | `PB3` | `TIM2_CH2`；与 SWO/SWV trace 复用，使用 PWM 时不启用该调试输出 |
+| Direct PWM `MAIN3 / M3` | `PB10` | `TIM2_CH3`；I2C2 已迁移至 `PH4/PH5` |
+| Direct PWM `MAIN4 / M4` | `PB11` | `TIM2_CH4`；I2C2 已迁移至 `PH4/PH5` |
+| Direct PWM `MAIN5 / AUX1` | `PB4` | `TIM3_CH1`；当前未分配给其他已启用的板级外设，待实板波形验证 |
+| Direct PWM `MAIN6 / AUX2` | `PB5` | `TIM3_CH2`；与 `CAN2_RX` 候选复用，当前 CAN 已禁用，恢复 CAN2 前必须重新分配 |
 
 当前阶段先不规划：
 
@@ -979,47 +991,39 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 - 只接 `TX -> PC7`、`5V`、`GND` 通常可以先看到遥控通道；但建议同时接 `RX <- PC6`，给后续 CRSF 遥测回传留好链路。
 - 不建议买 `PWM1~7` 输出型 ELRS 接收机；那类接收机适合直接接舵机/电调，不适合当前 PX4 最小系统板的 UART RCIN 规划。
 
-### 14.5 PWM 电机输出规划
+### 14.5 六路 Direct PWM 输出配置（待实板验证）
 
-当前四旋翼电机 PWM 先暂定统一使用 `TIM2` 的四个通道，方便四路电机保持同一个定时器基准：
+提交 `6117992417 feat(h743mini): 配置六路 PWM 输出` 已将 Direct PWM 从 V6C 遗留的八路跨定时器映射收口为两组、六路输出。当前 `timer_config.cpp`、`board_config.h` 和 `defconfig` 的配置一致，但本节不把源码配置等同于已在电调或飞行器上验证。
 
-| 电机输出 | H743mini 引脚 | STM32 外设 | 排针位置 | 连接说明 |
-|---|---|---|---|---|
-| `M1` | `PA15` | `TIM2_CH1` | `P2-41` | 电调信号线，需与电调共地 |
-| `M2` | `PB3` | `TIM2_CH2` | `P2-25` | 电调信号线，需与电调共地 |
-| `M3` | `PB10` | `TIM2_CH3` | `P1-23` | 电调信号线，需与电调共地 |
-| `M4` | `PB11` | `TIM2_CH4` | `P1-24` | 电调信号线，需与电调共地 |
+| PX4 输出角色 | H743mini 引脚 | STM32 定时器 | 当前源码状态 |
+|---|---|---|---|
+| `MAIN1 / M1` | `PA15` | `TIM2_CH1` | 已配置；`P2-41`；V6C 遗留 Brick1 valid GPIO 已不初始化 |
+| `MAIN2 / M2` | `PB3` | `TIM2_CH2` | 已配置；`P2-25`；不可同时使用 SWO/SWV trace |
+| `MAIN3 / M3` | `PB10` | `TIM2_CH3` | 已配置；`P1-23`；I2C2 已迁移至 `PH4/PH5` |
+| `MAIN4 / M4` | `PB11` | `TIM2_CH4` | 已配置；`P1-24`；I2C2 已迁移至 `PH4/PH5` |
+| `MAIN5 / AUX1` | `PB4` | `TIM3_CH1` | 已配置；本轮未从硬件原理图复核排针位置 |
+| `MAIN6 / AUX2` | `PB5` | `TIM3_CH2` | 已配置；与 `CAN2_RX` 候选复用，当前 CAN GPIO 未初始化 |
 
-规划理由：
+源码关系：
 
-- 四路电机统一在 `TIM2_CH1~CH4`，比跨多个定时器更规整，后续配置 PWM 输出更清晰。
-- 这四个引脚都在当前 IIT6 GPIO 排针上引出，第一阶段方便用杜邦线接电调信号。
-- 避开 `PA0` / `PA1` 两个按键相关引脚，降低按键电路对 PWM 信号的影响。
-- 避开 GPS1 已规划的 `PA2` / `PA3`，不和 `USART2` 冲突。
-- 避开 RCIN 已规划的 `PC6` / `PC7`，不和 `USART6` 冲突。
+- `DIRECT_PWM_OUTPUT_CHANNELS` 为 `6`，`BOARD_NUM_IO_TIMERS` 为 `2`，分别与六个通道和 `TIM2`、`TIM3` 两个 `io_timer` 实例对应。
+- `TIM2` 使用 DMA `Index1`，`TIM3` 不配置 DShot DMA；两组定时器可分别设置 PWM rate，混控输出角色由 PX4 参数和 mixer/actuator 配置决定，`MAIN5 / AUX1`、`MAIN6 / AUX2` 不是两套同时存在的物理通道。
+- H743 `io_timer` 对 `TIM2` 自动配置 AF1，对 `TIM3` 自动配置 AF2；上述引脚与 NuttX H743 pinmap 中的对应 `CHxOUT` 复用相符。
+- Direct PWM 的 `io_timer` 自行使能 RCC、初始化寄存器并接管中断。`initIOTimer()` 对 NuttX 通用 `TIMx` 驱动有编译期断言，要求对应 `CONFIG_STM32H7_TIMx` 保持关闭；因此不应按旧规划添加 `CONFIG_STM32H7_TIM2=y` 或 `CONFIG_STM32H7_TIM3=y`。
+- 本次删除 `CONFIG_STM32H7_TIM1`、`TIM4`、`TIM5`，它们不再承担 Direct PWM。蜂鸣器仍独立使用 `PB14 / TIM12_CH1`，不会占用 `TIM3`。
 
-PA15 说明：
+复用约束：
 
-- `PA15` 在原 FMU-v6C 源码里被定义为 `GPIO_nPOWER_IN_A`，用于判断 `Brick1` 电源输入是否有效。
-- 该信号是数字状态检测，不是电压/电流 ADC；真正的电压/电流检测当前规划仍是 `PC5` / `PC4`。
-- `GPIO_nPOWER_IN_A` 是低电平有效，源码中 `BOARD_ADC_BRICK1_VALID` 通过读取该脚判断 `system_power.brick_valid`。
-- 当前最小系统板没有照搬 FMU-v6C 的完整电源选择/有效检测电路，所以可先释放 `PA15` 给 `TIM2_CH1` 做电机 PWM。
-- 当前 `BOARD_ADC_BRICK1_VALID` 已改为固定有效，`GPIO_nPOWER_IN_A` 也已从 `PX4_GPIO_INIT_LIST` 中屏蔽；后续做 PWM 时仍需在 `timer_config.cpp` 和 NuttX TIM2 配置中真正启用 `PA15 -> TIM2_CH1`。
+- `PA15` 原本是 `GPIO_nPOWER_IN_A`。当前 `BOARD_ADC_BRICK1_VALID` 已固定有效，且该 GPIO 未进入 `PX4_GPIO_INIT_LIST`，可由 `TIM2_CH1` 接管。
+- `PB3` 可作为 SWO/SWV trace；当前保留的四针 SWD 仅使用 `PA13/PA14`，使用 `MAIN2` 时不要启用 SWO/SWV。
+- `PB10/PB11` 不再承担 I2C2，当前 EEPROM 的 I2C2 已使用 `PH4/PH5`。
+- `PB5` 在 `board.h` 中仍定义为 `CAN2_RX` 候选。当前 CAN GPIO 初始化已屏蔽、UAVCAN 也未启用；未来接入 CAN2 前必须在 CAN2 与第六路 PWM 之间二选一或重新分配引脚。
 
-源码注意：
+接线与验证风险：
 
-- 当前 `boards/gjl/h743mini/src/timer_config.cpp` 仍沿用 FMU-v6C 的直接 PWM 映射，前四路是 `PA8` / `PE11` / `PE13` / `PE14`。
-- 当前 IIT6 板上 `PE11` / `PE13` / `PE14` 已用于 SDRAM，不能继续作为电机 PWM。
-- 后续需要把 `timer_config.cpp` 改成 `TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`。
-- 后续需要在 NuttX 配置中启用 `CONFIG_STM32H7_TIM2=y`。
-- `PB10` / `PB11` 早期曾受 V6C 默认 I2C2 假设影响；当前 EEPROM 的 I2C2 已改到 `PH4` / `PH5`，后续推进 PWM 前仍需复核 `timer_config.cpp` 和 NuttX pinmap，避免重新引入冲突。
-- `PB3` 可作为 `TRACESWO/JTDO` 调试输出，但当前 4pin SWD 下载只使用 `PA13/SWDIO` 和 `PA14/SWCLK`，不占用 `PB3`。
-
-接线风险：
-
-- 电机 PWM 输出只接电调信号线和地线，不从 STM32 GPIO 给电调供电。
-- 电调供电、大电流电池线和飞控逻辑供电要先分开验证，避免把大电流或高电压引入 MCU 引脚。
-- 真正上电调试前，先不装桨，先用示波器或逻辑分析仪确认四路 PWM 输出顺序和频率。
+- PWM 只接电调信号线与地线，不从 STM32 GPIO 给电调供电；大电流电池线、电调供电和飞控逻辑供电必须分开处理。
+- 首次测试不得安装螺旋桨。先以示波器或逻辑分析仪确认六个引脚的波形、频率和输出顺序，再逐路连接电调。
+- 本轮没有新的 `make` 输出、烧录记录、`pwm info` 输出、示波器截图或实板日志；六路输出当前状态是“源码已配置，硬件未验收”。
 
 ### 14.6 LED / 普通 GPIO 重映射候选
 
