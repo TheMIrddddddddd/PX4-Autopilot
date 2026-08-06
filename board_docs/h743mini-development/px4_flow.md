@@ -21,7 +21,7 @@
 7. 如果遇到问题，看“调试方法”和“常见坑”。
 
 ## 1. 当前状态
-当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动已统一转换为 PX4 `X前/Y右/Z下` 坐标，默认仍不自动启动，等待重新校准和主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。最近一次提交已完成六路 Direct PWM 的源码配置：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；该结论仅到源码层，尚未补充本轮构建输出、示波器波形或上板电调验证。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
+当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动先将原始 `X前/Y左/Z上` 转为 PX4 FRD，再按当前实物绕 Z 轴掉头 180 度的安装方式应用 `SENS_JY901_ROT=4`，默认仍不自动启动，等待重新校准和双 IMU 主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。最近一次提交已完成六路 Direct PWM 的源码配置：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；该结论仅到源码层，尚未补充本轮构建输出、示波器波形或上板电调验证。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
 
 2026-07-26 更新：PM02 的 `board_adc`、`battery_status`、`PC4/PC5` ADC 通道和 3S 5300 mAh 默认参数已配置并构建通过；模块未接时 ADC 浮空会产生约 `60 V / 120 A / 0%` 的假电池状态，不能当作真实掉电。GPS1 驱动已启用，当前真实 UART 映射为 `PA3=USART2_RX`、`PA2=USART2_TX`，外置 IST8310 预留 `PB7/PB8=I2C1_SDA/SCL`，现在可以开始接入 PM02 和 GPS + IST8310 实物。ELRS/CRSF 已实测识别为 CRSF、16 通道且遥测可用；仍缺少真实 RF 断链 failsafe 测试。用户口述已看到至少部分 Direct PWM 约 `400 Hz` 波形，但六路顺序、M5/M6 和电调 Actuator Test 仍未完成。
 
@@ -111,7 +111,7 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - 使用 `UART4 PH13/PH14`、`/dev/ttyS3`、`115200 8N1`，启用 DMA1 UART4 RX。
   - 解析 `0x51/0x52/0x54/0x56` 帧，分别发布 accel、gyro、mag、baro，四类实测均约 `200.7 Hz`。
   - 启动时只发送运行时配置，不向模块 Flash 发送 SAVE。
-  - JY901B 原始 `X前/Y左/Z上` 已在驱动内转换为 PX4 `X前/Y右/Z下`，与 ICM42688P 均使用 `-R 0`。
+  - JY901B 原始 `X前/Y左/Z上` 已在驱动内转换为 PX4 FRD；当前实物相对机体绕 Z 轴掉头 180 度，板级默认使用 `SENS_JY901_ROT=4`（X/Y 反向、Z 不变），ICM42688P 保持 `-R 0`。
   - 仅对 JY901B 气压设备类型关闭整数气压连续相同值误判，`300 ms` 数据超时仍保留并已验证。
 - 已启用 ELRS/CRSF RC 输入基础链路：
   - `CONFIG_DRIVERS_RC_INPUT=y` 已进入 H743mini 固件。
@@ -759,6 +759,7 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/034_JY901B_UART4_RX_DMA驱动与四类传感器验证_2026-07-17_21-42-07|034 JY901B UART4 RX DMA 驱动与四类传感器验证 2026-07-17 21:42:07]]
 - [[px4_flow_logs/035_六路Direct_PWM源码配置_2026-07-25_19-22-12|035 六路 Direct PWM 源码配置 2026-07-25 19:22:12]]
 - [[px4_flow_logs/036_PM02电池ADC配置与GPS接入准备_2026-07-26_00-49-56|036 PM02 电池 ADC 配置与 GPS 接入准备 2026-07-26 00:49:56]]
+- [[px4_flow_logs/037_JY901B安装旋转修正_2026-08-03_23-04-47|037 JY901B 安装旋转修正 2026-08-03 23:04:47]]
 
 ## 14. 当前已占用引脚表
 

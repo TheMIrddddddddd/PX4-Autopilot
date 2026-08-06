@@ -22,8 +22,10 @@ board_adc start
 # Internal SPI bus ICM42688p
 icm42688p -R 0 -s -f 2000 start
 
-# JY901B on UART4 PH13/PH14 (/dev/ttyS3). Keep disabled until calibration
-# and sensor priorities are configured below the primary ICM42688P.
+# JY901B on UART4 PH13/PH14 (/dev/ttyS3). The H743mini board default uses
+# ROTATION_YAW_180 (SENS_JY901_ROT=4) for the current physical installation.
+# Keep disabled until calibration and sensor priorities are configured below
+# the primary ICM42688P.
 if param compare SENS_JY901_EN 1
 then
 	jy901b -d /dev/ttyS3 -R p:SENS_JY901_ROT start
@@ -35,5 +37,6 @@ fi
 # Internal compass on IMU I2C4 (The same bus is also exposed externally, and therefore marked as external)
 # ist8310 -X -b 4 -a 0xc  start
 
-# External compass on GPS/I2C1 (the 3rd external bus): standard Holybro Pixhawk 4 or CUAV V5 GPS/compass puck (with lights, safety button, and buzzer)
-# ist8310 -X -b 1 -R 10 start
+# External IST8310 on the GPS module: I2C1 PB7/PB8, address 0x0e.
+# The module vendor specifies ROTATION_ROLL_180_YAW_90 (rotation 10).
+ist8310 -X -b 1 -R 10 -q start

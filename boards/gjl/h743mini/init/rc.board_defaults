@@ -15,6 +15,10 @@ param set-default BAT1_A_PER_V 36.364
 param set-default BAT1_N_CELLS 3
 param set-default BAT1_CAPACITY 5300
 
+# JY901B is mounted with a 180-degree yaw offset from the vehicle FRD frame.
+# ROTATION_YAW_180 reverses X/Y and leaves Z unchanged.
+param set-default SENS_JY901_ROT 4
+
 # V6C MAVLink Ethernet defaults.
 # Disabled for now because H743mini currently uses USB/QGC and CH340/NSH, and
 # does not have an Ethernet MAVLink path.
