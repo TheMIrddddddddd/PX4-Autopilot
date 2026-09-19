@@ -115,8 +115,7 @@
 	/* PC4  */  GPIO_ADC12_INP4,   \
 	/* PC5  */  GPIO_ADC12_INP8,   \
 	/* PC0  */  GPIO_ADC123_INP10, \
-	/* PC1  */  GPIO_ADC123_INP11, \
-	/* PA4  */  GPIO_ADC12_INP18   \
+	/* PC1  */  GPIO_ADC123_INP11  \
 
 /* Define Channel numbers must match above GPIO pin IN(n)*/
 #define ADC_BATTERY1_CURRENT_CHANNEL            /* PC4 */  ADC1_CH(4)
@@ -129,12 +128,19 @@
 #define ADC_HW_VER_SENSE_CHANNEL                /* PC1 */  ADC3_CH(11)
 /* PA2 is reserved for USART2_TX / GPS. Do not initialize it as ADC. */
 //#define ADC_BATTERY2_CURRENT_CHANNEL            /* PA2 */  ADC1_CH(14)
-#define ADC_SCALED_V5_CHANNEL                   /* PA4 */  ADC1_CH(18)
+
+/* The battery and 5 V sense dividers are high impedance.  Use the longest
+ * H7 ADC sampling time so the internal sample capacitor settles to the
+ * measured pin voltage instead of retaining the previous channel voltage. */
+#define BOARD_ADC_SAMPLE_TIME                   ADC_SMPR_810p5
+#define BOARD_ADC_CONVERSION_TIMEOUT_US        200
+/* PLL2P is 150 MHz on this board; /6 keeps the ADC kernel clock at 25 MHz,
+ * within the H7 operating range while the maximum sample time is selected. */
+#define BOARD_ADC_CLOCK_DIVIDER                  6
 
 #define ADC_CHANNELS \
 	((1 << ADC_BATTERY1_CURRENT_CHANNEL) | \
-	(1 << ADC_BATTERY1_VOLTAGE_CHANNEL) | \
-	 (1 << ADC_SCALED_V5_CHANNEL       ))
+	 (1 << ADC_BATTERY1_VOLTAGE_CHANNEL))
 
 #define HW_REV_VER_ADC_BASE STM32_ADC3_BASE
 
@@ -248,6 +254,18 @@
 #endif
 
 /* No USB VBUS sense GPIO is available on h743mini. */
+
+/*
+ * Keep board_adc's system_power publication enabled even though this board
+ * cannot detect USB VBUS independently.  A constant false value makes the
+ * power check use the measured 5 V rail instead of silently treating the
+ * power state as unavailable.
+ */
+#define BOARD_ADC_USB_CONNECTED     (0)
+#define BOARD_ADC_USB_VALID         (0)
+
+/* There is no dedicated 5 V rail sense divider on this board. */
+#define BOARD_ADC_V5_SENSE_VALID    (0)
 
 /* FMUv6C never powers off the Servo rail */
 

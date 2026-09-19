@@ -33,6 +33,7 @@
 
 #include "../PreFlightCheck.hpp"
 
+#include <board_config.h>
 #include <drivers/drv_hrt.h>
 #include <systemlib/mavlink_log.h>
 #include <lib/parameters/param.h>
@@ -65,8 +66,10 @@ bool PreFlightCheck::powerCheck(orb_advert_t *mavlink_log_pub, const vehicle_sta
 		int32_t required_power_module_count = 0;
 		param_get(param_find("COM_POWER_COUNT"), &required_power_module_count);
 
-		// Check avionics rail voltages (if USB isn't connected)
+		// Check avionics rail voltages (if USB isn't connected and this board
+		// provides a dedicated 5 V sense input).
 		if (!system_power.usb_connected) {
+			#if !defined(BOARD_ADC_V5_SENSE_VALID) || BOARD_ADC_V5_SENSE_VALID
 			float avionics_power_rail_voltage = system_power.voltage5v_v;
 
 			if (avionics_power_rail_voltage < 4.5f) {
@@ -87,6 +90,7 @@ bool PreFlightCheck::powerCheck(orb_advert_t *mavlink_log_pub, const vehicle_sta
 					mavlink_log_critical(mavlink_log_pub, "CAUTION: Avionics Power high: %6.2f Volt", (double)avionics_power_rail_voltage);
 				}
 			}
+			#endif
 
 
 			const int power_module_count = math::countSetBits(system_power.brick_valid);

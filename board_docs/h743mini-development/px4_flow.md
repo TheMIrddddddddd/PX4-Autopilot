@@ -21,9 +21,14 @@
 7. 如果遇到问题，看“调试方法”和“常见坑”。
 
 ## 1. 当前状态
-当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200.7 Hz` 发布加速度、角速度、磁场和气压；驱动先将原始 `X前/Y左/Z上` 转为 PX4 FRD，再按当前实物绕 Z 轴掉头 180 度的安装方式应用 `SENS_JY901_ROT=4`，默认仍不自动启动，等待重新校准和双 IMU 主副优先级验证。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5` 并完成未接收机条件下的驱动启动验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。最近一次提交已完成六路 Direct PWM 的源码配置：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11`，`TIM3_CH1~CH2 -> PB4/PB5`；该结论仅到源码层，尚未补充本轮构建输出、示波器波形或上板电调验证。当前主线进入“重新校准并验证双 IMU 坐标/投票，接入 GPS/IST8310，并在 ELRS 硬件到货后完成 CRSF 闭环验证”的阶段。
+当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200 Hz` 发布加速度、角速度、磁场和气压；驱动先将原始 `X前/Y左/Z上` 转为 PX4 FRD，经过与 ICM42688P 的实物 A/B 对比确认当前安装使用 `SENS_JY901_ROT=0`。QGroundControl 加速度计、陀螺仪和磁力计校准流程已完成，ICM42688P 已设为主 IMU、JY901B 为低优先级备 IMU；约 30 分钟静止测试显示 ICM 输出稳定，JY901B 通信正常但静止陀螺仪长期输出零并出现 `STALE`，其自动归零/有效分辨率仍待单独测试。板级默认仍保持 `SENS_JY901_EN=0`，测试时按需启用。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5`，已完成正常接收、RF 断链检测和恢复验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。六路 Direct PWM 的源码配置和基础波形均已验证：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11` 为 400 Hz，`TIM3_CH1~CH2 -> PB4/PB5` 为 50 Hz；PWM5/6 的正式 mixer/执行器映射和电调兼容性仍待收口。当前主线进入 TEL2 自动消息流、PWM 正式映射和磁力计抗干扰验证阶段。
 
 2026-07-26 更新：PM02 的 `board_adc`、`battery_status`、`PC4/PC5` ADC 通道和 3S 5300 mAh 默认参数已配置并构建通过；模块未接时 ADC 浮空会产生约 `60 V / 120 A / 0%` 的假电池状态，不能当作真实掉电。GPS1 驱动已启用，当前真实 UART 映射为 `PA3=USART2_RX`、`PA2=USART2_TX`，外置 IST8310 预留 `PB7/PB8=I2C1_SDA/SCL`，现在可以开始接入 PM02 和 GPS + IST8310 实物。ELRS/CRSF 已实测识别为 CRSF、16 通道且遥测可用；仍缺少真实 RF 断链 failsafe 测试。用户口述已看到至少部分 Direct PWM 约 `400 Hz` 波形，但六路顺序、M5/M6 和电调 Actuator Test 仍未完成。
+
+2026-08-07 更新（本轮为 MAVLink 只读审计，零代码修改）：GPS 链路已通过 MAVLink 实测确认正常（UBX、`/dev/ttyS1`、115200 自动检测、8 Hz 数据流新鲜）；室内无星时 `lat/lon` 输出的随机噪声值（每次采样不同）是 u-blox 无 fix 时的无效数据，PX4 忠实透传，收到星后会自动变为真实坐标，不是故障。解锁策略已确认：`COM_ARM_WO_GPS=1`（v1.13 默认），**没有 GPS fix 不会拒绝解锁**，GPS 质量检查失败仅发 warning；无位置源时 Position/Offboard 模式不可用。IST8310 已确认在线：`i2cdetect -b 1` 扫到 `0x0e`，`sensor_mag` 数据健康（模长约 430 mGauss、`error_count=0`）；`-R 10 = ROTATION_ROLL_180_YAW_90` 已代码确认（与厂商标注一致），`sensor_mag` 发布的是旋转补偿后数据；方向复核实测中因翻转动作未保持水平未闭环（平放 `311/-106/234`、倒放 `130/433/22` mGauss，模长均健康），留待 PCB 后完成。`SYS_AUTOSTART=4001`（quad_x）、`RC_MAP_*=1/2/3/4`（AETR 美国手，QGC 已配并保存）已确认。TEL2 实例已在运行：`MAV_1_CONFIG=102` 枚举确认 = TELEM 2 角色（非 GPS1）→ `/dev/ttyS4` = UART5，配置正确无冲突；**PCB 尚未为 TEL2 数传串口预留接口**，PCB 前需补。USB MAVLink 实例为 Config 模式（无 HIGHRES_IMU 属正常），磁力计经 SCALED_IMU 以 mGauss 单位输出。文档修正：`SER_GPS1_BAUD` 在 v1.13 不是有效参数（GPS 波特率自动检测）。源码完成度审计结论：**外设源码基本全部就绪**，唯一可选补充项 `RC_MAP_*` 板级兜底默认暂缓（用户决定 PCB 后处理）。
+2026-09-18 更新（JY901B、双 IMU 与外设闭环）：已完成 JY901B UART4 四类传感器约 200 Hz 输出、与 ICM42688P 的三轴 A/B 方向对比、QGroundControl 加速度计/陀螺仪/磁力计校准、ICM 主 IMU 与 JY901B 备 IMU 的优先级配置，以及约 30 分钟静止零漂观察。实测 `-R 0` 与 ICM42688P 方向一致，`-R 4` 错误，因此板级默认和当前保存参数均改为 `SENS_JY901_ROT=0`。GPS 已完成有星 3D fix 和静态定位基础测试；IST8310 已完成北/东/南/西航向连续性基础测试；气压计已完成约 5 分钟静止测试，EKF2 当前使用气压高度。Direct PWM 已实测 TIM2 的 PWM1–4 为 400 Hz、TIM3 的 PWM5–6 为 50 Hz；5/6 路通过临时 `PWM_MAIN_DIS5/6=1500` 使能脉冲验证，正式输出映射仍待收口。PM02 ADC 仍存在实测 0.66 V 与 `raw_data=65535` 不一致的问题，暂缓。详见 `px4_flow_logs/039_JY901B与双IMU坐标校准投票及静止零漂测试_2026-09-18.md` 和 `px4_flow_logs/040_外设闭环与Direct_PWM波形测试_2026-09-18_23-06-47.md`。
+
+2026-09-19 更新（PM02 ADC 复测与固件闭环）：在明确“未接电池、纯 USB 供电”后，通过 MAVLink NSH 复测 `adc_report`、`battery_status`、`system_power` 和 `board_adc test`。PC4/PC5 无有效 PM02 模拟输入时出现 `0`、`32768` 或 `65535` 等浮空读数，PX4 可能计算出约 `30/60 V` 的假电池状态；`ADC test successful` 仅表示采样循环未超时。H7 ADC 通道预选、单端模式、长采样时间、ADC `/6` 分频和无 5 V sense 板级电源检查适配已完成构建并烧录校验，但 PM02 接入后的 `PC5 实测约 0.66 V` 与 `raw_data=65535` 一致性仍未闭环。详见 `px4_flow_logs/041_PM02_ADC复测与当前进展_2026-09-19.md`。
 
 当前优先烧录方式：
 
@@ -111,8 +116,9 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - 使用 `UART4 PH13/PH14`、`/dev/ttyS3`、`115200 8N1`，启用 DMA1 UART4 RX。
   - 解析 `0x51/0x52/0x54/0x56` 帧，分别发布 accel、gyro、mag、baro，四类实测均约 `200.7 Hz`。
   - 启动时只发送运行时配置，不向模块 Flash 发送 SAVE。
-  - JY901B 原始 `X前/Y左/Z上` 已在驱动内转换为 PX4 FRD；当前实物相对机体绕 Z 轴掉头 180 度，板级默认使用 `SENS_JY901_ROT=4`（X/Y 反向、Z 不变），ICM42688P 保持 `-R 0`。
+  - JY901B 原始 `X前/Y左/Z上` 已在驱动内转换为 PX4 FRD；实物 A/B 对比确认当前安装使用 `SENS_JY901_ROT=0`，ICM42688P 保持 `-R 0`。
   - 仅对 JY901B 气压设备类型关闭整数气压连续相同值误判，`300 ms` 数据超时仍保留并已验证。
+  - 已完成 JY901B 与 ICM42688P 的三轴方向对比、QGC 加速度计/陀螺仪校准，以及 ICM 主 / JY901B 备的优先级配置；JY901B 静止陀螺仪长期为零的问题单列为后续有效分辨率测试项。
 - 已启用 ELRS/CRSF RC 输入基础链路：
   - `CONFIG_DRIVERS_RC_INPUT=y` 已进入 H743mini 固件。
   - `USART6 PC6/PC7` 已配置为 `/dev/ttyS5`，驱动可进入 `searching for signal: CRSF`。
@@ -136,19 +142,24 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 
 当前主要问题：
 
+- **PCB 尚未为 TEL2 数传串口预留接口**：`UART5 PB13/PB12` 的源码配置（`MAV_1_CONFIG=102` TELEM2 → `/dev/ttyS4`）已完成且实例已在运行，但 PCB 原理图/布局需补 P1-32/P1-33 引出。
+- **IST8310 方向复核未闭环**：`-R 10 = ROTATION_ROLL_180_YAW_90` 已代码确认（与厂商标注一致），`sensor_mag` 已确认在线且健康（模长约 430 mGauss）；实测量测时"倒放"动作未保持水平（`z: 234→22`，垂直分量落到 y 轴），正确判据为水平翻面后 z 必反号。留待 PCB 后完整复核 + 校准。
 - 当前仍沿用较多 V6C 默认启动项，日志中会出现未接外设错误。
 - TF 卡链路当前只在“完全断电冷启动”场景下可靠；`reboot` 或板载复位键后的 TF 卡状态仍不可靠。
 - `/fs/mtd_caldata` 当前没有工厂校准数据；未启用 `SYS_FAC_CAL_MODE` 前，`param dump /fs/mtd_caldata` 显示 BSON no data 属于正常状态。
 - GD25Q128 当前采用 QSPI polling 模式，DMA 未启用；当前测试已稳定，DMA 不是下一步阻塞项。
-- `ICM42688P` 已在杜邦线临时外接条件下完成 SPI2 DMA 稳定读取，但实际安装方向 `-R 0` 仍需结合载板方向复核；高速 SPI 频率余量需要等 PCB 画完后再测试。
-- `GPS/IST8310` 已具备 `USART2 PA2/PA3` 与 `I2C1 PB7/PB8` 的板级配置，但尚未完成实物接线、卫星定位、IST8310 读数和校准；JY901B 已接入，但坐标修改后必须重新执行 accel/gyro/mag 校准，并完成与 ICM42688P 的主副优先级和故障切换测试。
-- ELRS/CRSF 已完成绑定、16 通道输入和双向遥测实测；仍需关闭遥控器或接收机电源，验证 PX4 的真实 RF 丢失 failsafe 行为。
-- GPS 接入后需要将 `GPS_1_CONFIG` 设为 `201`，使 GPS1 使用 `/dev/ttyS1`；当前无需再改动 `USART2` 的 PA2/PA3 板级复用。
+- `ICM42688P` 已在杜邦线临时外接条件下完成 SPI2 DMA 稳定读取，且已通过与 JY901B 的实物 A/B 对比确认当前安装方向 `-R 0`；高速 SPI 频率余量需要等 PCB 画完后再测试。
+- GPS 链路已 MAVLink 实测正常（UBX、8 Hz、数据新鲜），但尚未完成室外卫星定位；室内无星时 `lat/lon` 噪声值属正常现象。IST8310 已在线（`i2cdetect -b 1` 扫到 `0x0e`）且数据健康，但统一航向、室外指北和抗干扰闭环仍待完成。
+- JY901B 已完成坐标 A/B 对比、QGC 校准和主副优先级配置；仍需验证 ICM42688P 停止后是否能自动切换到 JY901B，并单独测试 JY901B 陀螺仪自动归零/有效分辨率。`SENS_JY901_EN` 板级默认保持 0，测试时按需启用。
+- ELRS/CRSF 已完成绑定、16 通道输入、双向遥测和 RF 丢失/恢复实测；断链时 `vehicle_status.rc_signal_lost=True`，恢复后清除。
+- `GPS_1_CONFIG=201` 已确认生效（GPS1 角色 → `/dev/ttyS1`），无需再改动 `USART2` 的 PA2/PA3 板级复用。
 - PM02 尚未实物接入。USB 供电且 `PC4/PC5` 浮空时，PX4 会显示约 `60 V / 120 A / 0%` 的假电池状态；接线前不可依据该状态判断电量，模块暂不接时可临时设置 `BAT1_SOURCE=-1`。
-- `No autostart ID found` 场景下仍会直接尝试启动 `ekf2`；当前已有 ICM42688P IMU，但 Baro、Compass、GPS 等外设尚未完整接入，EKF2 状态仍需继续验证。
-- PX4IO、UAVCAN、部分串口和传感器启动项还需要按当前最小系统板裁剪。
-- 用户已口述观察到约 `400 Hz` 的 PWM 波形，但尚未在当前 H743mini 实板完整确认六路输出顺序、M5/M6、电平和与电调的实际兼容性；`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
+- `SYS_AUTOSTART=4001`（quad_x）已设置；ICM42688P 主 IMU和 JY901B 备 IMU 的基础输出、校准和选择已验证，但 Baro、Compass 的最终硬件闭环以及双 IMU 故障切换仍待完成。
+- PX4IO、UAVCAN 已裁剪；其余 V6C 遗留启动项按需继续收口。
+- Direct PWM 基础波形已完成：PWM1–4 为约 `400 Hz`，PWM5–6 为约 `50 Hz`；尚未完成六路正式输出顺序、M5/M6 的 mixer/Actuator Test、电平和与电调的实际兼容性验收。`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
 - `UART5 PB13/PB12` 文档定位已收口为 TEL2 / MAVLink 数传预留口；4G 公网链路曾做过阶段性测试，但体验不理想，当前不继续作为主调试链路推进。优先恢复 IMU/姿态数据后，再用普通数传验证 QGC。
+- `RC_MAP_*=1/2/3/4`（AETR，美国手标准映射）已在 QGC 配置并保存；板级 `set-default` 兜底默认暂缓（可选）。
+- 文档修正：`SER_GPS1_BAUD` 在 v1.13 不是有效参数（GPS 波特率由驱动自动检测），主文档 14.2 节相关描述已清理。
 
 ### 1.1 当前阶段启动约束
 
@@ -159,22 +170,41 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
   - `dmesg` 中出现 `importing from '/fs/microsd/params'`
   - `dmesg` 中出现 `data manager file '/fs/microsd/dataman'`
   - `dmesg` 中出现 `logger started`
-- 当前主线不是继续纠缠 TF 卡软复位问题，而是在“冷启动可用”的前提下，接入并验证 PM02、GPS/IST8310，重新校准 JY901B、验证双 IMU 坐标与投票，并完成 ELRS 的 RF 丢失 failsafe。
+- 当前主线不是继续纠缠 TF 卡软复位问题，而是在“冷启动可用”的前提下，完成 TEL2 自动消息流、PWM 正式输出映射和磁力计电机/电源干扰测试；ELRS RF failsafe 已完成，PM02 ADC 仍按用户安排暂缓。
 
 ### 1.2 下一阶段任务和目标
-下一阶段目标：先完成 PM02 与 GPS/IST8310 的实物接线和最小闭环验证，再完成 JY901B 坐标修改后的重新校准、双 IMU 对比和 ELRS 的 RF 丢失 failsafe；TEL2 继续作为普通 MAVLink 数传预留口，暂不推进 4G 公网链路。
+下一阶段目标：**PCB 打印前完成源码/文档收尾（补 TEL2 数传接口），PCB 到手后按"先接线后校准"顺序完成全部外设闭环验证**。TEL2 继续作为普通 MAVLink 数传预留口，暂不推进 4G 公网链路。
+
+#### PCB 前（源码/文档层）
 
 优先任务：
 
-1. PM02 接入前核对实物针序，量 `5V`、`CURR`、`VOLT`；接入后检查 `listener adc_report`、`listener battery_status` 是否显示可信 3S 电压和近零静置电流，且避免 USB 与 PM02 的 5V 反灌。
-2. 接入 GPS 后设置 `GPS_1_CONFIG=201`，用 `gps status`、`listener sensor_gps` 验证 `/dev/ttyS1` 数据；用 `i2cdetect -b 1` 和 `ist8310 -X -b 1 -R 0 start` 验证外置 IST8310。
-3. 检查 `icm42688p status`、`listener sensor_accel 1`、`listener sensor_gyro 1`、`listener vehicle_attitude 1`、`ekf2 status`；保持 `ICM42688P` 当前稳定工作点，不要在杜邦线接法下继续追高 SPI 频率。
-4. 对已接入的 `JY901B` 重新执行 accel/gyro/mag 校准，核对与 ICM42688P 的三轴正负方向、优先级和故障切换。
-5. 关闭遥控器或接收机电源，验证已接入的 ELRS/CRSF 在 RF 丢失时的 `input_rc`、`vehicle_status` 和 failsafe 行为。
-6. 在不装桨条件下补齐已配置六路 Direct PWM 的输出顺序、M5/M6、脉宽、电平和 Actuator Test；确认后才接电调。
-7. 确认本体能稳定产生姿态数据后，在 `UART5 PB13/PB12`（TEL2）上接普通数传电台或 USB-TTL，验证 QGC 收 HEARTBEAT / SYS_STATUS / ATTITUDE 等，并按需要评估 `MAV_1_RATE` 或 `SER_TEL2_BAUD`。
-8. 临时关闭或延后 PX4IO、UAVCAN、无用启动项；需要时再完整复测 MTD/冷启动存储链路。
-9. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC UDP。
+1. **PCB 补数传串口**：PCB 原理图/布局为 TEL2（`UART5_TX=PB13/P1-33`、`UART5_RX=PB12/P1-32`）预留接口；确认 P1-32/P1-33 排针引出。
+2. （可选）`rc.board_defaults` 增加 `RC_MAP_ROLL/PITCH/YAW/THROTTLE=1/2/3/4` 兜底默认（参数区被清空时自动恢复 AETR 美国手），构建烧录。
+3. （已完成）主文档 14.2 节无效参数 `SER_GPS1_BAUD` 已清理（GPS 波特率自动检测，实测 115200）。
+4. 保持 `SENS_JY901_EN=0` 默认关闭，PCB 后校准完成再启用。
+
+验收标准：
+
+- PCB 原理图含 TEL2 接口，与文档引脚表一致。
+- 主文档参数描述与 v1.13 实际参数集一致。
+
+#### PCB 后（接线/校准/验证层）
+
+优先任务：
+
+1. **TEL2 数传自动消息流**：重启后确认 UART5 `/dev/ttyS4` 仍有 HEARTBEAT、ATTITUDE；若 `HIGHRES_IMU` 仍需手工 `mavlink stream`，再单独收口启动配置。
+2. **Direct PWM 正式映射**：基础 400 Hz/50 Hz 波形已通过；先明确 PWM5/6 是电机/电调还是舵机，再完成输出顺序、脉宽、电平、mixer 和 Actuator Test，确认后才接电调。
+3. **磁力计抗干扰**：在不装桨条件下接入电调/电源线，观察 `sensor_mag` 模长、航向和 `estimator_status_flags`，确认没有磁场扰动或航向跳变。
+4. **JY901B 有效分辨率补充记录**：双 IMU 故障切换已完成现场测试；保留 JY901B 静止自动归零/分辨率观察，确认动态和静止状态的差异。
+5. PM02 实物接入和 ADC 修复按用户安排暂缓；恢复时仍需量 `5V`、`CURR`、`VOLT`，并同时核对 `adc_report` 原始计数和 `battery_status` 缩放值。
+6. **不**把 4G DTU/公网 relay 作为当前主线；若将来再启 4G，只需复用同一 TEL2 口并重验 DTU、服务器 relay、腾讯云 UDP 14560、防火墙与 QGC。
+
+验收标准：
+
+- 六路 PWM 波形与 Actuator Test 完整记录。
+- GPS/磁力计/JY901B/PM02/ELRS/TEL2 各外设均有上板实测输出记录。
+- 全部外设验证完成后，把状态更新为"源码 + 硬件闭环"。
 
 ## 2. 项目上下文
 这是一个 PX4 二次开发项目，当前聚焦在 STM32H7 最小系统板的板级适配。
@@ -760,6 +790,10 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/035_六路Direct_PWM源码配置_2026-07-25_19-22-12|035 六路 Direct PWM 源码配置 2026-07-25 19:22:12]]
 - [[px4_flow_logs/036_PM02电池ADC配置与GPS接入准备_2026-07-26_00-49-56|036 PM02 电池 ADC 配置与 GPS 接入准备 2026-07-26 00:49:56]]
 - [[px4_flow_logs/037_JY901B安装旋转修正_2026-08-03_23-04-47|037 JY901B 安装旋转修正 2026-08-03 23:04:47]]
+- [[px4_flow_logs/038_MAVLink外设状态审计与IST8310方向复核_2026-08-07_00-07-15|038 MAVLink 外设状态审计与 IST8310 方向复核 2026-08-07 00:07:15]]
+- [[px4_flow_logs/039_JY901B与双IMU坐标校准投票及静止零漂测试_2026-09-18|039 JY901B 与双 IMU 坐标校准投票及静止零漂测试 2026-09-18]]
+- [[px4_flow_logs/040_外设闭环与Direct_PWM波形测试_2026-09-18_23-06-47|040 外设闭环与 Direct PWM 波形测试 2026-09-18 23:06:47]]
+- [[px4_flow_logs/041_PM02_ADC复测与当前进展_2026-09-19|041 PM02 ADC 复测与当前进展 2026-09-19]]
 
 ## 14. 当前已占用引脚表
 
@@ -896,7 +930,7 @@ GPS1 当前规划优先使用 `USART2`，走第一张 GPIO 排针，方便用杜
 源码注意：
 
 - 当前 `boards/gjl/h743mini/nuttx-config/include/board.h` 已配置 `GPIO_USART2_RX=PA3`、`GPIO_USART2_TX=PA2`，与上表接线一致，无需再为 GPS 改动 USART2 引脚复用。
-- 当前 `default.px4board` 已启用 `CONFIG_DRIVERS_GPS=y`，GPS1 设备为 `/dev/ttyS1`；实物接入后设置 `GPS_1_CONFIG=201`、`GPS_1_PROTOCOL=1`、`SER_GPS1_BAUD=0`，保存并重启后用 `gps status`、`listener sensor_gps` 验证。
+- 当前 `default.px4board` 已启用 `CONFIG_DRIVERS_GPS=y`，GPS1 设备为 `/dev/ttyS1`；实物接入后设置 `GPS_1_CONFIG=201`、`GPS_1_PROTOCOL=1`（UBX），保存并重启后用 `gps status`、`listener sensor_gps` 验证。GPS 波特率由驱动自动检测（v1.13 无 `SER_GPS1_BAUD` 参数），当前实测自动检测为 115200。
 - `rc.board_sensors` 里的外置 `ist8310` 启动命令仍保持注释。先以 `i2cdetect -b 1` 确认地址 `0x0e`，再使用 `ist8310 -X -b 1 -R 0 start` 探测；确认实际安装方向并完成校准后，才固化方向与自动启动策略。
 
 安装约束：
@@ -984,7 +1018,7 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 
 - 当前 `boards/gjl/h743mini/nuttx-config/include/board.h` 中 `USART6_RX` 是 `PC7`，`USART6_TX` 是 `PC6`。
 - 当前 `boards/gjl/h743mini/src/board_config.h` 中仍保留 `PX4IO_SERIAL_DEVICE "/dev/ttyS4"` 和 `GPIO_USART6_TX/RX`，后续可把这组 `/dev/ttyS4` 作为 `RC_SERIAL_PORT` 复用。
-- 当前 `boards/gjl/h743mini/default.px4board` 已启用 `rc_input`，`RC_SERIAL_PORT=/dev/ttyS5` 已实测识别 CRSF，接收到 16 通道且 `CRSF Telemetry: yes`；仍需实测关闭遥控器或接收机后的 RF 丢失 failsafe。
+- 当前 `boards/gjl/h743mini/default.px4board` 已启用 `rc_input`，`RC_SERIAL_PORT=/dev/ttyS5` 已实测识别 CRSF，接收到 16 通道且 `CRSF Telemetry: yes`；遥控器关闭后可观察到 `RC state: searching for signal: CRSF` 和 `vehicle_status.rc_signal_lost=True`，恢复后可重新回到 `found: CRSF` 且清除 `rc_signal_lost`。
 - `src/drivers/rc_input/RCInput.cpp` 已支持 `TBS Crossfire (CRSF)`；ELRS 接收机输出的 CRSF 可走同一解析路径。
 - `src/lib/rc/crsf.cpp` 中 CRSF 串口波特率为 `420000`，解析的核心帧类型是 `rc_channels_packed`。
 
@@ -994,7 +1028,7 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 - 只接 `TX -> PC7`、`5V`、`GND` 通常可以先看到遥控通道；但建议同时接 `RX <- PC6`，给后续 CRSF 遥测回传留好链路。
 - 不建议买 `PWM1~7` 输出型 ELRS 接收机；那类接收机适合直接接舵机/电调，不适合当前 PX4 最小系统板的 UART RCIN 规划。
 
-### 14.5 六路 Direct PWM 输出配置（待实板验证）
+### 14.5 六路 Direct PWM 输出配置（基础波形已验证，正式映射待收口）
 
 提交 `6117992417 feat(h743mini): 配置六路 PWM 输出` 已将 Direct PWM 从 V6C 遗留的八路跨定时器映射收口为两组、六路输出。当前 `timer_config.cpp`、`board_config.h` 和 `defconfig` 的配置一致，但本节不把源码配置等同于已在电调或飞行器上验证。
 
@@ -1026,7 +1060,9 @@ RCIN 当前规划优先使用 `USART6`，复用原 FMU-v6C 用于 `PX4IO` 的串
 
 - PWM 只接电调信号线与地线，不从 STM32 GPIO 给电调供电；大电流电池线、电调供电和飞控逻辑供电必须分开处理。
 - 首次测试不得安装螺旋桨。先以示波器或逻辑分析仪确认六个引脚的波形、频率和输出顺序，再逐路连接电调。
-- 用户口述已看到至少部分约 `400 Hz` 波形，但本轮没有逐路截图、`pwm info`、输出顺序或 Actuator Test 记录；六路输出仍未完成完整硬件验收。
+- 本轮已完成基础波形验证：PWM1–4 观察到约 `400 Hz`，PWM5–6 在临时设置 `PWM_MAIN_DIS5/6=1500` 后观察到约 `50 Hz`。初始状态下 PWM5/6 为 `0 us`，原因是当前只有 `/dev/pwm_output0`、`PWM_MAIN_OUT=1234`，且没有 `/dev/pwm_output1`；因此 5/6 的正式输出映射尚未完成。当前固件的 `pwm test` 仅存在帮助文本示例，实际命令会返回 Usage，不能作为测试脉冲生成方式。
+
+六路 Direct PWM 仍未完成完整硬件验收，后续还需逐路记录输出顺序、脉宽、电平，并在确认 PWM5/6 是电机/电调还是舵机后完成 mixer/Actuator Test；未完成前不得接电调或安装螺旋桨。
 
 ### 14.6 LED / 普通 GPIO 重映射候选
 

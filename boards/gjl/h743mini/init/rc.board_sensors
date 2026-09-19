@@ -22,8 +22,8 @@ board_adc start
 # Internal SPI bus ICM42688p
 icm42688p -R 0 -s -f 2000 start
 
-# JY901B on UART4 PH13/PH14 (/dev/ttyS3). The H743mini board default uses
-# ROTATION_YAW_180 (SENS_JY901_ROT=4) for the current physical installation.
+# JY901B on UART4 PH13/PH14 (/dev/ttyS3). The measured H743mini installation
+# needs no additional rotation (SENS_JY901_ROT=0).
 # Keep disabled until calibration and sensor priorities are configured below
 # the primary ICM42688P.
 if param compare SENS_JY901_EN 1
