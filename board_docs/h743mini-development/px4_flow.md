@@ -30,6 +30,8 @@
 
 2026-09-19 更新（PM02 ADC 复测与固件闭环）：在明确“未接电池、纯 USB 供电”后，通过 MAVLink NSH 复测 `adc_report`、`battery_status`、`system_power` 和 `board_adc test`。PC4/PC5 无有效 PM02 模拟输入时出现 `0`、`32768` 或 `65535` 等浮空读数，PX4 可能计算出约 `30/60 V` 的假电池状态；`ADC test successful` 仅表示采样循环未超时。H7 ADC 通道预选、单端模式、长采样时间、ADC `/6` 分频和无 5 V sense 板级电源检查适配已完成构建并烧录校验，但 PM02 接入后的 `PC5 实测约 0.66 V` 与 `raw_data=65535` 一致性仍未闭环。详见 `px4_flow_logs/041_PM02_ADC复测与当前进展_2026-09-19.md`。
 
+2026-09-19 追加（VREF 根因闭环与 ADC 驱动回退）：确认此前 `raw_data=65535` 的主要根因是 STM32H743 的 VREF+ 未接入 3.3 V，而不是 ADC 芯片损坏或 `BAT1_V_DIV` 错误。将 3.3 V 与 VREF+ 焊接后，PM02 分压实测约 `0.66 V`、电池实测约 `11.93 V`，换算关系合理。此前为排查高阻分压和 H7 通道切换而加入的 ADC 采样时间、强制 `/6` 分频、延长超时、PCSEL/DIFSEL 和 FIFO 清理等驱动改动已回退，当前保留必要的 PC4/PC5 通道映射、自动 `board_adc` 启动和单电池 PM02 配置。QGC 的 `274.05 V` 则是独立的 `BATTERY_STATUS.voltages_ext` 无效值兼容问题，已单独修复。详见 `px4_flow_logs/042_PM02_ADC采样闭环与VREF根因_2026-09-19.md`。
+
 当前优先烧录方式：
 
 ```text

@@ -144,8 +144,14 @@ private:
 					= (sizeof(bat_msg.voltages_ext) / sizeof(bat_msg.voltages_ext[0]));
 				uint16_t cell_voltages[mavlink_cell_slots + mavlink_cell_slots_extension];
 
-				for (auto &voltage : cell_voltages) {
-					voltage = UINT16_MAX;
+				// MAVLink uses different invalid values for the two voltage arrays:
+				// voltages[0..9] uses UINT16_MAX, while voltages_ext[0..3] uses 0.
+				for (int cell = 0; cell < mavlink_cell_slots; cell++) {
+					cell_voltages[cell] = UINT16_MAX;
+				}
+
+				for (int cell = 0; cell < mavlink_cell_slots_extension; cell++) {
+					cell_voltages[mavlink_cell_slots + cell] = 0;
 				}
 
 				if (battery_status.connected) {

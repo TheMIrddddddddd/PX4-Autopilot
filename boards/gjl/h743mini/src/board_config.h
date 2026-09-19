@@ -129,15 +129,6 @@
 /* PA2 is reserved for USART2_TX / GPS. Do not initialize it as ADC. */
 //#define ADC_BATTERY2_CURRENT_CHANNEL            /* PA2 */  ADC1_CH(14)
 
-/* The battery and 5 V sense dividers are high impedance.  Use the longest
- * H7 ADC sampling time so the internal sample capacitor settles to the
- * measured pin voltage instead of retaining the previous channel voltage. */
-#define BOARD_ADC_SAMPLE_TIME                   ADC_SMPR_810p5
-#define BOARD_ADC_CONVERSION_TIMEOUT_US        200
-/* PLL2P is 150 MHz on this board; /6 keeps the ADC kernel clock at 25 MHz,
- * within the H7 operating range while the maximum sample time is selected. */
-#define BOARD_ADC_CLOCK_DIVIDER                  6
-
 #define ADC_CHANNELS \
 	((1 << ADC_BATTERY1_CURRENT_CHANNEL) | \
 	 (1 << ADC_BATTERY1_VOLTAGE_CHANNEL))

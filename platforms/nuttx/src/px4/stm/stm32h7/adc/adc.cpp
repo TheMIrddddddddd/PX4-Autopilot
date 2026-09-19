@@ -63,22 +63,13 @@
 #define rCFG(base)   REG((base), STM32_ADC_CFGR_OFFSET)
 #define rCFG2(base)  REG((base), STM32_ADC_CFGR2_OFFSET)
 #define rCCR(base)   REG((base), STM32_ADC_CCR_OFFSET) // Offset has ADC CMN included
-#define rDIFSEL(base) REG((base), STM32_ADC_DIFSEL_OFFSET)
 #define rSQR1(base)  REG((base), STM32_ADC_SQR1_OFFSET)
 #define rSQR2(base)  REG((base), STM32_ADC_SQR2_OFFSET)
 #define rSQR3(base)  REG((base), STM32_ADC_SQR3_OFFSET)
 #define rSQR4(base)  REG((base), STM32_ADC_SQR4_OFFSET)
 #define rDR(base)    REG((base), STM32_ADC_DR_OFFSET)
 
-#if defined(BOARD_ADC_SAMPLE_TIME)
-# define ADC_SMPR_DEFAULT   BOARD_ADC_SAMPLE_TIME
-#else
-# define ADC_SMPR_DEFAULT   ADC_SMPR_64p5
-#endif
-
-#ifndef BOARD_ADC_CONVERSION_TIMEOUT_US
-# define BOARD_ADC_CONVERSION_TIMEOUT_US 50
-#endif
+#define ADC_SMPR_DEFAULT    ADC_SMPR_64p5 // 64.5 +7.5 * 24 Mhz is 3 uS
 #define ADC_SMPR1_DEFAULT   ((ADC_SMPR_DEFAULT << ADC_SMPR1_SMP0_SHIFT) | \
 			     (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP1_SHIFT) | \
 			     (ADC_SMPR_DEFAULT << ADC_SMPR1_SMP2_SHIFT) | \
@@ -105,35 +96,7 @@
 
 #define ADC_MAX_FADC 36000000
 
-#if defined(BOARD_ADC_CLOCK_DIVIDER)
-# if BOARD_ADC_CLOCK_DIVIDER == 1
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_NOT_DIV
-# elif BOARD_ADC_CLOCK_DIVIDER == 2
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV2
-# elif BOARD_ADC_CLOCK_DIVIDER == 4
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV4
-# elif BOARD_ADC_CLOCK_DIVIDER == 6
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV6
-# elif BOARD_ADC_CLOCK_DIVIDER == 8
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV8
-# elif BOARD_ADC_CLOCK_DIVIDER == 10
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV10
-# elif BOARD_ADC_CLOCK_DIVIDER == 12
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV12
-# elif BOARD_ADC_CLOCK_DIVIDER == 16
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV16
-# elif BOARD_ADC_CLOCK_DIVIDER == 32
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV32
-# elif BOARD_ADC_CLOCK_DIVIDER == 64
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV64
-# elif BOARD_ADC_CLOCK_DIVIDER == 128
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV128
-# elif BOARD_ADC_CLOCK_DIVIDER == 256
-#  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV256
-# else
-#  error "Unsupported BOARD_ADC_CLOCK_DIVIDER"
-# endif
-#elif STM32_PLL2P_FREQUENCY     <= ADC_MAX_FADC
+#if STM32_PLL2P_FREQUENCY     <= ADC_MAX_FADC
 #  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_NOT_DIV
 #elif STM32_PLL2P_FREQUENCY/2 <= ADC_MAX_FADC
 #  define ADC_CCR_PRESC_DIV     ADC_CCR_PRESC_DIV2
@@ -247,44 +210,6 @@ int px4_arch_adc_init(uint32_t base_address)
 	}
 
 
-	/* Configure the ADC while it is disabled. H7 requires the analog input
-	 * switches to be preselected before ADEN; writes made after the ADC is
-	 * enabled may be ignored by the hardware. */
-
-	rSMPR1(base_address) = ADC_SMPR1_DEFAULT;
-	rSMPR2(base_address) = ADC_SMPR2_DEFAULT;
-
-
-	/* Set CFGR configuration
-	 * Set the resolution of the conversion.
-	 * Disable external trigger for regular channels
-	 */
-
-	rCFG(base_address) = (ADC_CFGR_RES_16BIT | ADC_CFGR_EXTEN_NONE);
-
-	/* Set CFGR2 configuration to align right no oversample */
-
-	rCFG2(base_address) = 0;
-
-	rDIFSEL(base_address) = 0;
-	uint32_t pcsel = ADC_CHANNELS;
-	/* ADC3 is also used for board revision/version and internal temperature. */
-#ifdef ADC_HW_REV_SENSE_CHANNEL
-	pcsel |= 1u << ADC_HW_REV_SENSE_CHANNEL;
-#endif
-#ifdef ADC_HW_VER_SENSE_CHANNEL
-	pcsel |= 1u << ADC_HW_VER_SENSE_CHANNEL;
-#endif
-	pcsel |= 1u << ADC3_INTERNAL_TEMP_SENSOR_CHANNEL;
-	rPCSEL(base_address) = pcsel & ADC_PCSEL_PCSEL_ALL;
-
-	/* configure for a single-channel sequence */
-
-	rSQR1(base_address) = 0;
-	rSQR2(base_address) = 0;
-	rSQR3(base_address) = 0;
-	rSQR4(base_address) = 0;
-
 	/* Enable ADC
 	 * Note: ADEN bit cannot be set during ADCAL=1 and 4 ADC clock cycle
 	 * after the ADCAL bit is cleared by hardware. If we are using SYSCLK
@@ -307,14 +232,39 @@ int px4_arch_adc_init(uint32_t base_address)
 		}
 	}
 
+
+	/* arbitrarily configure all channels for 64.5 cycle sample time */
+
+	rSMPR1(base_address) = ADC_SMPR1_DEFAULT;
+	rSMPR2(base_address) = ADC_SMPR2_DEFAULT;
+
+
+	/* Set CFGR configuration
+	 * Set the resolution of the conversion.
+	 * Disable external trigger for regular channels
+	 */
+
+	rCFG(base_address) = (ADC_CFGR_RES_16BIT | ADC_CFGR_EXTEN_NONE);
+
+	/* Set CFGR2 configuration to align right no oversample */
+
+	rCFG2(base_address) = 0;
+
+	/* configure for a single-channel sequence */
+
+	rSQR1(base_address) = 0;
+	rSQR2(base_address) = 0;
+	rSQR3(base_address) = 0;
+	rSQR4(base_address) = 0;
+
 	/* kick off a sample and wait for it to complete */
 	now = hrt_absolute_time();
 	rCR(base_address) |= ADC_CR_ADSTART;
 
 	while (!(rISR(base_address) & ADC_INT_EOC)) {
 
-		/* Abort if the board-specific conversion timeout is exceeded. */
-		if ((hrt_absolute_time() - now) > BOARD_ADC_CONVERSION_TIMEOUT_US) {
+		/* don't wait for more than 50us, since that means something broke - should reset here if we see this */
+		if ((hrt_absolute_time() - now) > 50) {
 			return -4;
 		}
 	}
@@ -350,22 +300,15 @@ uint32_t px4_arch_adc_sample(uint32_t base_address, unsigned channel)
 	}
 
 
-	/* Drain any unread conversion result left in the H7 ADC FIFO.  Reading
-	 * ADC_DR is what clears EOC for each FIFO entry. */
-	for (unsigned i = 0; i < 8 && (rISR(base_address) & ADC_INT_EOC); i++) {
-		(void)rDR(base_address);
+	/* clear any previous EOC */
+
+	if (rISR(base_address) & ADC_INT_EOC) {
+		rISR(base_address) &= ~ADC_INT_EOC;
 	}
 
-	/* Clear status flags using the H7 write-one-to-clear semantics. */
-	rISR(base_address) = ADC_INT_EOC | ADC_INT_EOS | ADC_INT_OVR;
+	/* run a single conversion right now - should take about 64.5 cycles (34 microseconds) max */
 
-	/* Run a single conversion right now.  The board may use a long sample time
-	 * for high-impedance voltage dividers, so use the board-specific timeout. */
-
-	/* Keep the requested input preselected.  H7's analog switch selection must
-	 * remain active before the channel is put in the regular sequence. */
-	rDIFSEL(base_address) &= ~(1u << channel);
-	rPCSEL(base_address) |= 1u << channel;
+	rPCSEL(base_address) |= 1 << channel;
 	rSQR1(base_address) = channel << ADC_SQR1_SQ_OFFSET;
 	rCR(base_address) |= ADC_CR_ADSTART;
 
@@ -374,8 +317,8 @@ uint32_t px4_arch_adc_sample(uint32_t base_address, unsigned channel)
 
 	while (!(rISR(base_address) & ADC_INT_EOC)) {
 
-		/* Abort if the board-specific conversion timeout is exceeded. */
-		if ((hrt_absolute_time() - now) > BOARD_ADC_CONVERSION_TIMEOUT_US) {
+		/* don't wait for more than 50us, since that means something broke - should reset here if we see this */
+		if ((hrt_absolute_time() - now) > 50) {
 			px4_leave_critical_section(flags);
 			return UINT32_MAX;
 		}
@@ -383,12 +326,6 @@ uint32_t px4_arch_adc_sample(uint32_t base_address, unsigned channel)
 
 	/* read the result and clear EOC */
 	uint32_t result = rDR(base_address);
-
-	/* A conversion may have been queued while the previous result was being
-	 * serviced.  Discard any remaining FIFO entries before the next channel. */
-	for (unsigned i = 0; i < 8 && (rISR(base_address) & ADC_INT_EOC); i++) {
-		(void)rDR(base_address);
-	}
 
 	px4_leave_critical_section(flags);
 
