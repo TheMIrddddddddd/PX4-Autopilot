@@ -39,6 +39,8 @@
 
 #include "voted_sensors_update.h"
 
+#include <drivers/drv_sensor.h>
+#include <lib/drivers/device/Device.hpp>
 #include <lib/sensor_calibration/Utilities.hpp>
 #include <lib/geo/geo.h>
 #include <lib/systemlib/mavlink_log.h>
@@ -151,7 +153,22 @@ void VotedSensorsUpdate::imuPoll(struct sensor_combined_s &raw)
 			_vehicle_imu_status_subs[uorb_index].copy(&imu_status);
 
 			_accel_device_id[uorb_index] = imu_report.accel_device_id;
-			_gyro_device_id[uorb_index] = imu_report.gyro_device_id;
+
+			if (_gyro_device_id[uorb_index] != imu_report.gyro_device_id) {
+				_gyro_device_id[uorb_index] = imu_report.gyro_device_id;
+
+				// JY901B can report an identical zero-rate value while stationary. Do not
+				// classify valid, regularly timestamped samples as stale based on value alone.
+				// The validator timeout remains active and still detects a stopped stream.
+				device::Device::DeviceId device_id{};
+				device_id.devid = imu_report.gyro_device_id;
+
+				const uint32_t equal_value_threshold =
+					(device_id.devid_s.devtype == DRV_IMU_DEVTYPE_JY901B) ?
+					UINT32_MAX : DataValidator::VALUE_EQUAL_COUNT_DEFAULT;
+
+				_gyro.voter.set_equal_value_threshold(uorb_index, equal_value_threshold);
+			}
 
 			// convert the delta velocities to an equivalent acceleration
 			const float accel_dt_inv = 1.e6f / (float)imu_report.delta_velocity_dt;

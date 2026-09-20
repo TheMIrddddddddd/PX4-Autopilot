@@ -21,7 +21,7 @@
 7. 如果遇到问题，看“调试方法”和“常见坑”。
 
 ## 1. 当前状态
-当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200 Hz` 发布加速度、角速度、磁场和气压；驱动先将原始 `X前/Y左/Z上` 转为 PX4 FRD，经过与 ICM42688P 的实物 A/B 对比确认当前安装使用 `SENS_JY901_ROT=0`。QGroundControl 加速度计、陀螺仪和磁力计校准流程已完成，ICM42688P 已设为主 IMU、JY901B 为低优先级备 IMU；约 30 分钟静止测试显示 ICM 输出稳定，JY901B 通信正常但静止陀螺仪长期输出零并出现 `STALE`，其自动归零/有效分辨率仍待单独测试。板级默认仍保持 `SENS_JY901_EN=0`，测试时按需启用。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5`，已完成正常接收、RF 断链检测和恢复验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。六路 Direct PWM 的源码配置和基础波形均已验证：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11` 为 400 Hz，`TIM3_CH1~CH2 -> PB4/PB5` 为 50 Hz；PWM5/6 的正式 mixer/执行器映射和电调兼容性仍待收口。当前主线进入 TEL2 自动消息流、PWM 正式映射和磁力计抗干扰验证阶段。
+当前阶段：H743 最小系统板已经完成 bootloader 与主程序烧录，PX4 主程序可启动，USB/QGC/NSH 调试链路已打通。TF 卡、`/fs/microsd`、参数导入、`dataman`、`logger` 已在“完全断电后重新上电”的冷启动场景验证可用，但 `reboot` 或板载复位键后的 TF 卡状态仍不可靠。BL24C16F EEPROM 已完成 I2C2、AT24C16 bank 地址协议和 PX4 MTD 分区验证。GD25Q128 QSPI Flash 已完成 JEDEC 识别、QSPI 驱动修复、PX4 MTD 接入、`/fs/mtd_params` 参数持久化和 `/fs/mtd_waypoints` 备用分区验证。当前已完成第一版飞控传感器通信与引脚规划，并已在杜邦线临时外接条件下调通 `ICM42688P` 主 IMU：`SPI2 PC2/PC3/PD3(P2-36) + PE4 CS + PE6 DRDY`，当前稳定工作点为 `2 MHz SPI + 4 kHz ODR + 800 Hz FIFO 读取/发布 + SPI2 DMA`。JY901B 已通过 `UART4 PH13/PH14` 和 RX DMA 接入，能够以约 `200 Hz` 发布加速度、角速度、磁场和气压；驱动先将原始 `X前/Y左/Z上` 转为 PX4 FRD，经过与 ICM42688P 的实物 A/B 对比确认当前安装使用 `SENS_JY901_ROT=0`。QGroundControl 加速度计、陀螺仪和磁力计校准流程已完成，ICM42688P 已设为主 IMU、JY901B 为低优先级备 IMU；静止零漂测试最初发现 JY901B 陀螺仪长期输出合法零值但被通用 DataValidator 误报 `STALE`，现已在 `voted_sensors_update.cpp` 中仅针对 JY901B 陀螺仪放宽连续相同值判据，同时保留数据超时保护；双 IMU 故障切换和恢复已完成现场验证，JY901B 自动归零/有效分辨率仍待单独测试。板级默认仍保持 `SENS_JY901_EN=0`，测试时按需启用。ELRS/CRSF 的 `rc_input` 已编入固件，`USART6 PC6/PC7` 已映射为 `/dev/ttyS5`，已完成正常接收、RF 断链检测和恢复验证。`PB14 / TIM12_CH1` 蜂鸣器链路已完成 PX4 `tone_alarm` 适配、H7 TIM12 RCC 兼容补丁、编译验证和上板有声验证。`UART5 PB13/PB12` 已确定为 **TEL2 / MAVLink 数传预留口**（非 4G 专用口）。六路 Direct PWM 的源码配置和基础波形均已验证：`TIM2_CH1~CH4 -> PA15/PB3/PB10/PB11` 为 400 Hz，`TIM3_CH1~CH2 -> PB4/PB5` 为 50 Hz；PWM5/6 的正式 mixer/执行器映射和电调兼容性仍待收口。当前主线进入 TEL2 自动消息流、PWM 正式映射和磁力计抗干扰验证阶段。
 
 2026-07-26 更新：PM02 的 `board_adc`、`battery_status`、`PC4/PC5` ADC 通道和 3S 5300 mAh 默认参数已配置并构建通过；模块未接时 ADC 浮空会产生约 `60 V / 120 A / 0%` 的假电池状态，不能当作真实掉电。GPS1 驱动已启用，当前真实 UART 映射为 `PA3=USART2_RX`、`PA2=USART2_TX`，外置 IST8310 预留 `PB7/PB8=I2C1_SDA/SCL`，现在可以开始接入 PM02 和 GPS + IST8310 实物。ELRS/CRSF 已实测识别为 CRSF、16 通道且遥测可用；仍缺少真实 RF 断链 failsafe 测试。用户口述已看到至少部分 Direct PWM 约 `400 Hz` 波形，但六路顺序、M5/M6 和电调 Actuator Test 仍未完成。
 
@@ -31,6 +31,8 @@
 2026-09-19 更新（PM02 ADC 复测与固件闭环）：在明确“未接电池、纯 USB 供电”后，通过 MAVLink NSH 复测 `adc_report`、`battery_status`、`system_power` 和 `board_adc test`。PC4/PC5 无有效 PM02 模拟输入时出现 `0`、`32768` 或 `65535` 等浮空读数，PX4 可能计算出约 `30/60 V` 的假电池状态；`ADC test successful` 仅表示采样循环未超时。H7 ADC 通道预选、单端模式、长采样时间、ADC `/6` 分频和无 5 V sense 板级电源检查适配已完成构建并烧录校验，但 PM02 接入后的 `PC5 实测约 0.66 V` 与 `raw_data=65535` 一致性仍未闭环。详见 `px4_flow_logs/041_PM02_ADC复测与当前进展_2026-09-19.md`。
 
 2026-09-19 追加（VREF 根因闭环与 ADC 驱动回退）：确认此前 `raw_data=65535` 的主要根因是 STM32H743 的 VREF+ 未接入 3.3 V，而不是 ADC 芯片损坏或 `BAT1_V_DIV` 错误。将 3.3 V 与 VREF+ 焊接后，PM02 分压实测约 `0.66 V`、电池实测约 `11.93 V`，换算关系合理。此前为排查高阻分压和 H7 通道切换而加入的 ADC 采样时间、强制 `/6` 分频、延长超时、PCSEL/DIFSEL 和 FIFO 清理等驱动改动已回退，当前保留必要的 PC4/PC5 通道映射、自动 `board_adc` 启动和单电池 PM02 配置。QGC 的 `274.05 V` 则是独立的 `BATTERY_STATUS.voltages_ext` 无效值兼容问题，已单独修复。详见 `px4_flow_logs/042_PM02_ADC采样闭环与VREF根因_2026-09-19.md`。
+
+2026-09-20 更新（JY901B 陀螺仪 STALE 误判修复与双 IMU 故障切换）：静止测试确认 JY901B 串口数据、时间戳和频率正常，但陀螺仪合法的连续零输出被通用 DataValidator 的 100 次相同值阈值误报为 `STALE`。`src/modules/sensors/voted_sensors_update.cpp` 现仅对设备类型 `DRV_IMU_DEVTYPE_JY901B` 的陀螺仪设置 `UINT32_MAX` 相同值阈值，ICM42688P 和加速度计保持原逻辑；默认约 40 ms 的时间戳超时保护保留。修改后 JY901B 不再因静止零输出失去候选资格，已完成 ICM42688P 停止时切换到 JY901B、恢复后切回 ICM42688P 的现场验证。详见 `px4_flow_logs/043_JY901B陀螺仪误报STALE修复与双IMU故障切换_2026-09-20.md`。
 
 当前优先烧录方式：
 
@@ -152,11 +154,11 @@ QGroundControl USB MAVLink + CH340 USART1 NSH
 - GD25Q128 当前采用 QSPI polling 模式，DMA 未启用；当前测试已稳定，DMA 不是下一步阻塞项。
 - `ICM42688P` 已在杜邦线临时外接条件下完成 SPI2 DMA 稳定读取，且已通过与 JY901B 的实物 A/B 对比确认当前安装方向 `-R 0`；高速 SPI 频率余量需要等 PCB 画完后再测试。
 - GPS 链路已 MAVLink 实测正常（UBX、8 Hz、数据新鲜），但尚未完成室外卫星定位；室内无星时 `lat/lon` 噪声值属正常现象。IST8310 已在线（`i2cdetect -b 1` 扫到 `0x0e`）且数据健康，但统一航向、室外指北和抗干扰闭环仍待完成。
-- JY901B 已完成坐标 A/B 对比、QGC 校准和主副优先级配置；仍需验证 ICM42688P 停止后是否能自动切换到 JY901B，并单独测试 JY901B 陀螺仪自动归零/有效分辨率。`SENS_JY901_EN` 板级默认保持 0，测试时按需启用。
+- JY901B 已完成坐标 A/B 对比、QGC 校准、主副优先级配置和 ICM42688P 故障切换；当前仍需单独测试 JY901B 陀螺仪自动归零/有效分辨率，以及持续错误但时间戳仍更新时的异常检测边界。`SENS_JY901_EN` 板级默认保持 0，测试时按需启用。
 - ELRS/CRSF 已完成绑定、16 通道输入、双向遥测和 RF 丢失/恢复实测；断链时 `vehicle_status.rc_signal_lost=True`，恢复后清除。
 - `GPS_1_CONFIG=201` 已确认生效（GPS1 角色 → `/dev/ttyS1`），无需再改动 `USART2` 的 PA2/PA3 板级复用。
 - PM02 尚未实物接入。USB 供电且 `PC4/PC5` 浮空时，PX4 会显示约 `60 V / 120 A / 0%` 的假电池状态；接线前不可依据该状态判断电量，模块暂不接时可临时设置 `BAT1_SOURCE=-1`。
-- `SYS_AUTOSTART=4001`（quad_x）已设置；ICM42688P 主 IMU和 JY901B 备 IMU 的基础输出、校准和选择已验证，但 Baro、Compass 的最终硬件闭环以及双 IMU 故障切换仍待完成。
+- `SYS_AUTOSTART=4001`（quad_x）已设置；ICM42688P 主 IMU和 JY901B 备 IMU 的基础输出、校准、选择和故障切换已验证，但 Baro、Compass 的最终硬件闭环仍待完成。
 - PX4IO、UAVCAN 已裁剪；其余 V6C 遗留启动项按需继续收口。
 - Direct PWM 基础波形已完成：PWM1–4 为约 `400 Hz`，PWM5–6 为约 `50 Hz`；尚未完成六路正式输出顺序、M5/M6 的 mixer/Actuator Test、电平和与电调的实际兼容性验收。`PB5` 若将来恢复 `CAN2_RX`，不能继续同时作为第六路 PWM。
 - `UART5 PB13/PB12` 文档定位已收口为 TEL2 / MAVLink 数传预留口；4G 公网链路曾做过阶段性测试，但体验不理想，当前不继续作为主调试链路推进。优先恢复 IMU/姿态数据后，再用普通数传验证 QGC。
@@ -796,6 +798,8 @@ STM32_Programmer_CLI -c port=SWD mode=UR reset=HWrst freq=1000 \
 - [[px4_flow_logs/039_JY901B与双IMU坐标校准投票及静止零漂测试_2026-09-18|039 JY901B 与双 IMU 坐标校准投票及静止零漂测试 2026-09-18]]
 - [[px4_flow_logs/040_外设闭环与Direct_PWM波形测试_2026-09-18_23-06-47|040 外设闭环与 Direct PWM 波形测试 2026-09-18 23:06:47]]
 - [[px4_flow_logs/041_PM02_ADC复测与当前进展_2026-09-19|041 PM02 ADC 复测与当前进展 2026-09-19]]
+- [[px4_flow_logs/042_PM02_ADC采样闭环与VREF根因_2026-09-19|042 PM02 ADC 采样闭环与 VREF 根因 2026-09-19]]
+- [[px4_flow_logs/043_JY901B陀螺仪误报STALE修复与双IMU故障切换_2026-09-20|043 JY901B 陀螺仪误报 STALE 修复与双 IMU 故障切换 2026-09-20]]
 
 ## 14. 当前已占用引脚表
 
