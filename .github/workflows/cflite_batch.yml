@@ -1,5 +1,15 @@
 name: ClusterFuzzLite batch fuzzing
 on:
+  workflow_dispatch:
+    inputs:
+      fuzz_seconds:
+        description: 'Fuzzing duration in seconds (60 for a smoke test)'
+        required: true
+        default: '1800'
+        type: choice
+        options:
+        - '60'
+        - '1800'
   schedule:
     - cron: '0 6 * * *'  # UTC 6am every day.
 permissions: read-all
@@ -24,7 +34,7 @@ jobs:
       uses: google/clusterfuzzlite/actions/run_fuzzers@v1
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
-        fuzz-seconds: 1800 # 30 mins
+        fuzz-seconds: ${{ inputs.fuzz_seconds || 1800 }} # 30 mins for scheduled runs
         mode: 'batch'
         sanitizer: ${{ matrix.sanitizer }}
         # Optional but recommended: For storing certain artifacts from fuzzing.
