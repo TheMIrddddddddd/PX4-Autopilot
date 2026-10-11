@@ -35,9 +35,6 @@ px4_add_module(
 	MODULE modules__mavlink__mavlink_tests
 	MAIN mavlink_tests
 	STACK_MAIN 8192
-	INCLUDES
-		${CMAKE_BINARY_DIR}/mavlink
-		${CMAKE_BINARY_DIR}/mavlink/common
 	COMPILE_FLAGS
 		-DMAVLINK_FTP_UNIT_TEST
 		#-DMAVLINK_FTP_DEBUG
@@ -54,3 +51,8 @@ px4_add_module(
 	DEPENDS
 		mavlink_c_generate
 	)
+
+target_include_directories(modules__mavlink__mavlink_tests SYSTEM PRIVATE
+	${CMAKE_BINARY_DIR}/mavlink
+	${CMAKE_BINARY_DIR}/mavlink/common
+)

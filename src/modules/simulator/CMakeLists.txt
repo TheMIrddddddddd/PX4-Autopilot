@@ -54,9 +54,6 @@ px4_add_module(
 		-Wno-double-promotion
 		-Wno-cast-align
 		-Wno-address-of-packed-member # TODO: fix in c_library_v2
-	INCLUDES
-		${CMAKE_BINARY_DIR}/mavlink
-		${CMAKE_BINARY_DIR}/mavlink/development
 	SRCS
 		simulator.cpp
 		simulator_mavlink.cpp
@@ -68,7 +65,10 @@ px4_add_module(
 		drivers_gyroscope
 		drivers_magnetometer
 	)
-target_include_directories(modules__simulator INTERFACE ${CMAKE_BINARY_DIR}/mavlink)
+target_include_directories(modules__simulator SYSTEM
+	PUBLIC ${CMAKE_BINARY_DIR}/mavlink
+	PRIVATE ${CMAKE_BINARY_DIR}/mavlink/development
+)
 
 add_subdirectory(battery_simulator)
 add_subdirectory(sensor_baro_sim)
