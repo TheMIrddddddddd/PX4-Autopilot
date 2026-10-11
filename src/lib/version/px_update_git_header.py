@@ -150,8 +150,13 @@ if (os.path.exists('src/modules/mavlink/mavlink/.git')):
 if (os.path.exists('platforms/nuttx/NuttX/nuttx/.git')):
     nuttx_git_tags = subprocess.check_output('git -c versionsort.suffix=- tag --sort=v:refname'.split(),
                                   cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
-    nuttx_git_tag = re.findall(r'nuttx-[0-9]+\.[0-9]+\.[0-9]+', nuttx_git_tags)[-1].replace("nuttx-", "v")
-    nuttx_git_tag = re.sub('-.*', '.0', nuttx_git_tag)
+    nuttx_version_tags = re.findall(r'nuttx-[0-9]+\.[0-9]+\.[0-9]+', nuttx_git_tags)
+    if nuttx_version_tags:
+        nuttx_git_tag = nuttx_version_tags[-1].replace("nuttx-", "v")
+        nuttx_git_tag = re.sub('-.*', '.0', nuttx_git_tag)
+    else:
+        # Forks without upstream tags have an unknown version; retain their commit hash below.
+        nuttx_git_tag = ''
     nuttx_git_version = subprocess.check_output('git rev-parse --verify HEAD'.split(),
                                       cwd='platforms/nuttx/NuttX/nuttx', stderr=subprocess.STDOUT).decode('utf-8').strip()
     nuttx_git_version_short = nuttx_git_version[0:16]
