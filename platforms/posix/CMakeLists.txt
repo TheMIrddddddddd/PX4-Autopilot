@@ -55,7 +55,7 @@ endif()
 target_link_libraries(px4 PRIVATE uORB)
 
 if (CMAKE_BUILD_TYPE STREQUAL FuzzTesting)
-	target_include_directories(px4 PRIVATE SYSTEM "${CMAKE_BINARY_DIR}/mavlink}")
+	target_link_libraries(px4 PRIVATE mavlink_c)
 	target_compile_options(px4 PRIVATE "-Wno-cast-align")
 endif()
 
