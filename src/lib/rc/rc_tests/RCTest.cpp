@@ -359,7 +359,6 @@ bool RCTest::sbus2Test()
 	bool sbus_frame_drop;
 	uint16_t max_channels = sizeof(rc_values) / sizeof(rc_values[0]);
 
-	int rate_limiter = 0;
 	unsigned last_drop = 0;
 
 	while (EOF != (ret = fscanf(fp, "%f,%x,,", &f, &x))) {
@@ -375,7 +374,6 @@ bool RCTest::sbus2Test()
 		// Pipe the data into the parser
 		hrt_abstime now = hrt_absolute_time();
 
-		// if (rate_limiter % byte_offset == 0) {
 		bool result = sbus_parse(now, &frame[0], len, rc_values, &num_values,
 					 &sbus_failsafe, &sbus_frame_drop, &sbus_frame_drops, max_channels);
 
@@ -383,14 +381,10 @@ bool RCTest::sbus2Test()
 			//PX4_INFO("decoded packet");
 		}
 
-		// }
-
 		if (last_drop != (sbus_frame_drops + sbus_frame_resets)) {
 			PX4_WARN("frame dropped, now #%d", (sbus_frame_drops + sbus_frame_resets));
 			last_drop = sbus_frame_drops + sbus_frame_resets;
 		}
-
-		rate_limiter++;
 	}
 
 	ut_test(ret == EOF);
